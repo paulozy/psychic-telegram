@@ -16,3 +16,8 @@ dist/
 # misc
 .DS_Store
 *.log
+
+.claude/
+CENARIO_Servicos_Reforma_Tributaria_ARVAL.xlsx
+aliquotas.md
+CLAUDE.md

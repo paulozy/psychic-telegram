@@ -123,6 +123,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   type="number"
                   step="0.0001"
                   placeholder="Est.%"
+                  title="Pré-preenchido conforme LC 214/2025 · editável"
                   value={d.aliqIbsE || ''}
                   onChange={e => onAliquotaChange(op.key, 'aliqIbsE', parseFloat(e.target.value) || 0)}
                 />
@@ -131,6 +132,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   type="number"
                   step="0.0001"
                   placeholder="Mun.%"
+                  title="Pré-preenchido conforme LC 214/2025 · editável"
                   value={d.aliqIbsM || ''}
                   onChange={e => onAliquotaChange(op.key, 'aliqIbsM', parseFloat(e.target.value) || 0)}
                 />
@@ -172,6 +174,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                 type="number"
                 step="0.0001"
                 placeholder="%"
+                title="Pré-preenchido conforme LC 214/2025 · editável"
                 value={(d[campos.aliq] as number) || ''}
                 onChange={e => onAliquotaChange(op.key, campos.aliq, parseFloat(e.target.value) || 0)}
               />

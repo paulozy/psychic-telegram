@@ -290,10 +290,26 @@ html, body {
 .rt-th-label { text-align: left; min-width: 120px; }
 .rt-th-ano {
   text-align: right; min-width: 90px; cursor: pointer;
-  transition: color .1s;
+  transition: color .1s; vertical-align: bottom;
 }
 .rt-th-ano:hover { color: var(--accent); }
 .rt-th-ano.active { color: var(--accent); font-weight: 700; }
+.rt-th-ano.rt-th-exp { background: var(--accent-l); }
+
+/* Mini-barras no cabeçalho de ano */
+.rt-th-content {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+}
+.rt-bar-track {
+  width: 100%; height: 3px; background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.rt-bar-fill {
+  height: 100%; background: var(--amber); border-radius: 2px;
+  transition: width .35s ease;
+}
+.rt-bar-fill.rt-bar-active { background: var(--accent); }
+
 .rt-row { border-bottom: 1px solid var(--border); }
 .rt-row:last-child { border-bottom: none; }
 .rt-row-delta { background: var(--s2); }
@@ -310,6 +326,66 @@ html, body {
 .rt-td-num.marg { color: var(--amber); }
 .delta-up   { color: var(--red); }
 .delta-down { color: var(--green); }
+
+/* Breakdown expandível */
+.rt-breakdown {
+  border-top: 1px solid var(--border); background: var(--s2);
+  padding: 10px 14px 12px;
+}
+.rt-bd-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.rt-bd-title {
+  font-size: 10px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--t3);
+}
+.rt-bd-close {
+  font-size: 11px; color: var(--t3); background: none; border: none;
+  cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  transition: background .1s;
+}
+.rt-bd-close:hover { background: var(--border); color: var(--text); }
+
+.rt-bd-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.rt-bd-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 110px 48px;
+  align-items: center; gap: 10px;
+}
+.rt-bd-label {
+  font-size: 11px; color: var(--t2);
+  display: flex; align-items: center; gap: 6px;
+}
+.rt-bd-bar-track {
+  height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.rt-bd-bar-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  transition: width .3s ease;
+}
+.rt-bd-val {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--text); text-align: right;
+}
+.rt-bd-pct {
+  font-family: var(--mono); font-size: 10px; color: var(--t3); text-align: right;
+}
+
+.rt-bd-footer {
+  display: flex; align-items: center; gap: 12px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.rt-bd-footer-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--t3);
+}
+.rt-bd-footer-val {
+  font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text);
+}
+.rt-bd-footer-carga {
+  font-family: var(--mono); font-size: 11px; color: var(--amber); margin-left: auto;
+}
 
 /* Remove arrows dos inputs number */
 input[type=number]::-webkit-outer-spin-button,
