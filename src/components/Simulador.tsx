@@ -11,6 +11,7 @@ import {
   atualizarValor,
   atualizarAliquota,
 } from '@/lib/simulador'
+import { exportarXlsx } from '@/lib/exportXlsx'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
@@ -46,9 +47,10 @@ export function Simulador() {
     showToast('Dados limpos')
   }, [])
 
-  const handleExportar = useCallback(() => {
-    showToast('Exportação XLSX — em desenvolvimento')
-  }, [])
+  const handleExportar = useCallback(async () => {
+    await exportarXlsx(estado)
+    showToast('Exportação concluída')
+  }, [estado])
 
   const is2026 = anoAtivo === 2026
 
