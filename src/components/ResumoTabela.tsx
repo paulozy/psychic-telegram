@@ -13,6 +13,17 @@ interface ResumoTabelaProps {
 export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) {
   const [expandido, setExpandido] = useState<number | null>(null)
 
+  // Carga de referência: PIS + COFINS de rec_locacao em 2026 (lida do estado — dinâmica)
+  const ref2026 = estado[2026].rec_locacao
+  const cargaAliq2026 = ref2026.aliqPis + ref2026.aliqCof
+
+  function cargaAliqFromEstado(ano: number): number {
+    const a = estado[ano].rec_locacao
+    return ano === 2026
+      ? a.aliqPis + a.aliqCof
+      : a.aliqCbs + a.aliqIbsE + a.aliqIbsM
+  }
+
   const dados = ANOS.map((ano, idx) => {
     const r = resumoAno(estado, ano)
     const anterior = idx > 0 ? resumoAno(estado, ANOS[idx - 1]) : null
@@ -20,7 +31,8 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
       anterior !== null && anterior.tributos > 0 && r.tributos > 0
         ? ((r.tributos - anterior.tributos) / anterior.tributos) * 100
         : null
-    return { ano, ...r, deltaTribPct }
+    const deltaCarga = ano === 2026 ? null : cargaAliqFromEstado(ano) - cargaAliq2026
+    return { ano, ...r, deltaTribPct, deltaCarga }
   })
 
   const algumDado = dados.some(d => d.receita > 0 || d.tributos > 0)
@@ -35,6 +47,11 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
   function fmtDeltaPct(v: number) {
     const s = v > 0 ? '+' : ''
     return s + v.toFixed(1).replace('.', ',') + '%'
+  }
+
+  function fmtDeltaCarga(v: number) {
+    const s = v > 0 ? '+' : ''
+    return s + v.toFixed(2).replace('.', ',') + ' pp'
   }
 
   function handleAnoClick(ano: number) {
@@ -80,15 +97,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               <td className="rt-td rt-td-label">Receita bruta</td>
               {dados.map(({ ano, receita }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
-                  {receita > 0 ? fmtCompacto(receita) : '—'}
-                </td>
-              ))}
-            </tr>
-            <tr className="rt-row">
-              <td className="rt-td rt-td-label">Total tributos</td>
-              {dados.map(({ ano, tributos }) => (
-                <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
-                  {tributos > 0 ? fmtCompacto(tributos) : '—'}
+                  {receita > 0 ? 'R$ ' + fmtBR(receita) : '—'}
                 </td>
               ))}
             </tr>
@@ -97,6 +106,26 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               {dados.map(({ ano, margem }) => (
                 <td key={ano} className={`rt-td rt-td-num marg ${ano === anoAtivo ? 'active' : ''}`}>
                   {margem > 0 ? fmtPct(margem) : '—'}
+                </td>
+              ))}
+            </tr>
+            <tr className="rt-row rt-row-delta">
+              <td className="rt-td rt-td-label">Δ Carga vs 2026</td>
+              {dados.map(({ ano, deltaCarga }) => (
+                <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
+                  {deltaCarga === null ? <span className="rt-base-tag">base</span> : (
+                    <span className={deltaCarga > 0 ? 'delta-up' : deltaCarga < 0 ? 'delta-down' : ''}>
+                      {fmtDeltaCarga(deltaCarga)}
+                    </span>
+                  )}
+                </td>
+              ))}
+            </tr>
+            <tr className="rt-row">
+              <td className="rt-td rt-td-label">Total tributos</td>
+              {dados.map(({ ano, tributos }) => (
+                <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
+                  {tributos > 0 ? fmtCompacto(tributos) : '—'}
                 </td>
               ))}
             </tr>

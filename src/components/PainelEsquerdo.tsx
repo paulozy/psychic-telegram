@@ -1,6 +1,6 @@
 'use client'
 
-import { OPERACOES, ANOS, hasData, fmtCompacto } from '@/lib/simulador'
+import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
 import type { Estado } from '@/types/simulador'
 
 interface PainelEsquerdoProps {
@@ -80,12 +80,12 @@ export function PainelEsquerdo({
       <div className="left-footer">
         <div className="ft-row">
           <span className="ft-label">Total débitos</span>
-          <span className="ft-val deb">{fmtCompacto(totalDeb)}</span>
+          <span className="ft-val deb">{totalDeb > 0 ? 'R$ ' + fmtBR(totalDeb) : '—'}</span>
         </div>
         <hr className="ft-divider" />
         <div className="ft-row">
           <span className="ft-label">Total créditos</span>
-          <span className="ft-val cred">{fmtCompacto(totalCred)}</span>
+          <span className="ft-val cred">{totalCred > 0 ? 'R$ ' + fmtBR(totalCred) : '—'}</span>
         </div>
       </div>
     </aside>

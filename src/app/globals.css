@@ -289,7 +289,7 @@ html, body {
 }
 .rt-th-label { text-align: left; min-width: 120px; }
 .rt-th-ano {
-  text-align: right; min-width: 90px; cursor: pointer;
+  text-align: right; min-width: 130px; cursor: pointer;
   transition: color .1s; vertical-align: bottom;
 }
 .rt-th-ano:hover { color: var(--accent); }
@@ -326,6 +326,11 @@ html, body {
 .rt-td-num.marg { color: var(--amber); }
 .delta-up   { color: var(--red); }
 .delta-down { color: var(--green); }
+.rt-base-tag {
+  font-family: var(--mono); font-size: 9px;
+  background: var(--s2); color: var(--t3);
+  padding: 1px 6px; border-radius: 3px; border: 1px solid var(--border);
+}
 
 /* Breakdown expandível */
 .rt-breakdown {
