@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
+import { useState } from 'react'
 import { Topbar } from './Topbar'
 import { PainelEsquerdo } from './PainelEsquerdo'
 import { ResultadoBar } from './ResultadoBar'
@@ -10,12 +11,14 @@ import {
   estadoInicial,
   atualizarValor,
   atualizarAliquota,
+  aplicarAliquotasGlobais,
 } from '@/lib/simulador'
+import { useLocalStorage } from '@/lib/useLocalStorage'
 import { exportarXlsx } from '@/lib/exportXlsx'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
-  const [estado, setEstado] = useState<Estado>(estadoInicial)
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v1', estadoInicial())
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
@@ -42,7 +45,17 @@ export function Simulador() {
     setEstado(prev => atualizarAliquota(prev, anoAtivo, key, field, valor))
   }, [anoAtivo])
 
+  const handleAliquotasGlobais = useCallback((
+    aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>
+  ) => {
+    setEstado(prev => aplicarAliquotasGlobais(prev, anoAtivo, aliquotas))
+    showToast('Alíquotas aplicadas a todas as operações')
+  }, [anoAtivo])
+
   const handleLimpar = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v1')
+    }
     setEstado(estadoInicial())
     showToast('Dados limpos')
   }, [])
@@ -64,6 +77,7 @@ export function Simulador() {
           anoAtivo={anoAtivo}
           onSetAno={handleSetAno}
           onValorChange={handleValorChange}
+          onAliquotasGlobais={handleAliquotasGlobais}
         />
 
         <div className="right-panel">

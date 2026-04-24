@@ -272,6 +272,30 @@ export function aplicarAliquotasDoAno(estado: Estado, ano: number): Estado {
   return { ...estado, [ano]: novoAno }
 }
 
+/** Aplica alíquotas especificadas pelo usuário a todas as operações de um ano. */
+export function aplicarAliquotasGlobais(
+  estado: Estado,
+  ano: number,
+  aliquotasAplicar: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>
+): Estado {
+  const aliqAno = ALIQUOTAS_POR_ANO[ano]
+  const novoAno = { ...estado[ano] }
+  OPERACOES.forEach(op => {
+    const d = estado[ano][op.key]
+    const aliq = aliqAno[op.key]
+    const novosDados = {
+      ...d,
+      aliqPis:  'aliqPis' in aliquotasAplicar ? aliquotasAplicar.aliqPis! : d.aliqPis,
+      aliqCof:  'aliqCof' in aliquotasAplicar ? aliquotasAplicar.aliqCof! : d.aliqCof,
+      aliqCbs:  'aliqCbs' in aliquotasAplicar ? aliquotasAplicar.aliqCbs! : d.aliqCbs,
+      aliqIbsE: 'aliqIbsE' in aliquotasAplicar ? aliquotasAplicar.aliqIbsE! : d.aliqIbsE,
+      aliqIbsM: 'aliqIbsM' in aliquotasAplicar ? aliquotasAplicar.aliqIbsM! : d.aliqIbsM,
+    }
+    novoAno[op.key] = calcularOp(novosDados, ano, aliq.pRedIbs)
+  })
+  return { ...estado, [ano]: novoAno }
+}
+
 // ─── Formatação ──────────────────────────────────────────────────────────────
 
 export function fmtBR(v: number | null | undefined): string {
