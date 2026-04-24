@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 
-interface NumberInputBRProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface NumberInputBRProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
   value: number | ''
   onChange: (value: number) => void
   placeholder?: string

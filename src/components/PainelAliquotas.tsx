@@ -11,11 +11,11 @@ interface PainelAliquotasProps {
 
 export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquotasProps) {
   const [expandido, setExpandido] = useState(false)
-  const [pis, setPis] = useState<number>('')
-  const [cof, setCof] = useState<number>('')
-  const [cbs, setCbs] = useState<number>('')
-  const [ibsE, setIbsE] = useState<number>('')
-  const [ibsM, setIbsM] = useState<number>('')
+  const [pis, setPis] = useState<number | ''>('')
+  const [cof, setCof] = useState<number | ''>('')
+  const [cbs, setCbs] = useState<number | ''>('')
+  const [ibsE, setIbsE] = useState<number | ''>('')
+  const [ibsM, setIbsM] = useState<number | ''>('')
 
   const is2026 = anoAtivo === 2026
 
