@@ -125,7 +125,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               <td className="rt-td rt-td-label">Total tributos</td>
               {dados.map(({ ano, tributos }) => (
                 <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
-                  {tributos > 0 ? fmtCompacto(tributos) : '—'}
+                  {tributos > 0 ? 'R$ ' + fmtBR(tributos) : '—'}
                 </td>
               ))}
             </tr>
@@ -209,7 +209,7 @@ function BreakdownAno({
 
       <div className="rt-bd-footer">
         <span className="rt-bd-footer-label">Total tributos</span>
-        <span className="rt-bd-footer-val">{fmtCompacto(t.total)}</span>
+        <span className="rt-bd-footer-val">{t.total > 0 ? 'R$ ' + fmtBR(t.total) : '—'}</span>
         {carga > 0 && (
           <span className="rt-bd-footer-carga">
             {carga.toFixed(2).replace('.', ',')}% da receita

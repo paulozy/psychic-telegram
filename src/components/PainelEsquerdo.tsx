@@ -1,6 +1,7 @@
 'use client'
 
 import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
+import { NumberInputBR } from './NumberInputBR'
 import type { Estado } from '@/types/simulador'
 
 interface PainelEsquerdoProps {
@@ -62,12 +63,11 @@ export function PainelEsquerdo({
               </div>
               <div className="rec-valor-row">
                 <span className="rec-prefix">R$</span>
-                <input
+                <NumberInputBR
                   className="rec-input"
-                  type="number"
                   placeholder="0,00"
-                  value={d.valor || ''}
-                  onChange={e => onValorChange(op.key, parseFloat(e.target.value) || 0)}
+                  value={d.valor}
+                  onChange={valor => onValorChange(op.key, valor)}
                   onClick={e => e.stopPropagation()}
                 />
               </div>
