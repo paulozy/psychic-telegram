@@ -120,6 +120,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   placeholder="0,00"
                 />
                 <NumberInputBR
+                  key={`ibs-e-${op.key}-${ano}`}
                   className="field-inp aliq"
                   placeholder="Est.%"
                   title="Pré-preenchido conforme LC 214/2025 · editável"
@@ -127,6 +128,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   onChange={valor => onAliquotaChange(op.key, 'aliqIbsE', valor)}
                 />
                 <NumberInputBR
+                  key={`ibs-m-${op.key}-${ano}`}
                   className="field-inp aliq"
                   placeholder="Mun.%"
                   title="Pré-preenchido conforme LC 214/2025 · editável"
@@ -167,6 +169,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                 placeholder="0,00"
               />
               <NumberInputBR
+                key={`${tributo}-${op.key}-${ano}`}
                 className="field-inp aliq"
                 placeholder="%"
                 title="Pré-preenchido conforme LC 214/2025 · editável"

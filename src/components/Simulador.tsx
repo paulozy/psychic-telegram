@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useState } from 'react'
 import { Topbar } from './Topbar'
 import { PainelEsquerdo } from './PainelEsquerdo'
@@ -18,7 +18,8 @@ import { exportarXlsx } from '@/lib/exportXlsx'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v1', estadoInicial())
+  const estadoBase = useMemo(() => estadoInicial(), [])
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v1', estadoBase)
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)

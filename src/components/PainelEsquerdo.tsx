@@ -73,6 +73,7 @@ export function PainelEsquerdo({
               <div className="rec-valor-row">
                 <span className="rec-prefix">R$</span>
                 <NumberInputBR
+                  key={`${op.key}-${anoAtivo}`}
                   className="rec-input"
                   placeholder="0,00"
                   value={d.valor}
