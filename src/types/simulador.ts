@@ -26,3 +26,23 @@ export interface DadosOperacao {
 
 export type EstadoAno = Record<string, DadosOperacao>
 export type Estado = Record<number, EstadoAno>
+
+export interface ApuracaoTributo {
+  debito: number
+  credito: number
+  saldo: number
+}
+
+export interface ApuracaoAno {
+  pis: ApuracaoTributo
+  cofins: ApuracaoTributo
+  cbs: ApuracaoTributo
+  ibs: ApuracaoTributo
+  ibsE: ApuracaoTributo
+  ibsM: ApuracaoTributo
+  receita: number
+  totalAPagar: number
+  saldoCreedor: number
+  cargaEfetiva: number
+  cargaBruta: number
+}

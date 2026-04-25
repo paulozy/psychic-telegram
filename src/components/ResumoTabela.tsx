@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ANOS, resumoAno, resumoTributosBrutos, fmtCompacto, fmtBR } from '@/lib/simulador'
+import { ANOS, apurarAno, fmtCompacto, fmtBR } from '@/lib/simulador'
 import type { Estado } from '@/types/simulador'
 
 interface ResumoTabelaProps {
@@ -25,20 +25,20 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
   }
 
   const dados = ANOS.map((ano, idx) => {
-    const r = resumoAno(estado, ano)
-    const anterior = idx > 0 ? resumoAno(estado, ANOS[idx - 1]) : null
-    const deltaTribPct =
-      anterior !== null && anterior.tributos > 0 && r.tributos > 0
-        ? ((r.tributos - anterior.tributos) / anterior.tributos) * 100
+    const a = apurarAno(estado, ano)
+    const anterior = idx > 0 ? apurarAno(estado, ANOS[idx - 1]) : null
+    const deltaTotal =
+      anterior !== null && anterior.totalAPagar > 0 && a.totalAPagar > 0
+        ? ((a.totalAPagar - anterior.totalAPagar) / anterior.totalAPagar) * 100
         : null
-    const deltaCarga = ano === 2026 ? null : cargaAliqFromEstado(ano) - cargaAliq2026
-    return { ano, ...r, deltaTribPct, deltaCarga }
+    const deltaCarga = ano === 2026 ? null : a.cargaEfetiva - apurarAno(estado, 2026).cargaEfetiva
+    return { ano, ...a, deltaTotal, deltaCarga }
   })
 
-  const algumDado = dados.some(d => d.receita > 0 || d.tributos > 0)
+  const algumDado = dados.some(d => d.receita > 0 || d.totalAPagar > 0)
   if (!algumDado) return null
 
-  const maxCarga = Math.max(...dados.map(d => d.margem), 0.01)
+  const maxCarga = Math.max(...dados.map(d => d.cargaEfetiva), 0.01)
 
   function fmtPct(v: number) {
     return v.toFixed(2).replace('.', ',') + '%'
@@ -68,8 +68,8 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
           <thead>
             <tr>
               <th className="rt-th rt-th-label" />
-              {dados.map(({ ano, margem }) => {
-                const barPct = maxCarga > 0 ? (margem / maxCarga) * 100 : 0
+              {dados.map(({ ano, cargaEfetiva }) => {
+                const barPct = maxCarga > 0 ? (cargaEfetiva / maxCarga) * 100 : 0
                 const isAtivo = ano === anoAtivo
                 const isExp = expandido === ano
                 return (
@@ -83,7 +83,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                       <div className="rt-bar-track">
                         <div
                           className={`rt-bar-fill ${isAtivo ? 'rt-bar-active' : ''}`}
-                          style={{ width: margem > 0 ? `${barPct}%` : '0%' }}
+                          style={{ width: cargaEfetiva > 0 ? `${barPct}%` : '0%' }}
                         />
                       </div>
                     </div>
@@ -102,10 +102,40 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               ))}
             </tr>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Carga tributária</td>
-              {dados.map(({ ano, margem }) => (
+              <td className="rt-td rt-td-label">Tributos s/ débitos</td>
+              {dados.map(({ ano, pis, cofins, cbs, ibsE, ibsM }) => {
+                const totalDebitos = pis.debito + cofins.debito + cbs.debito + ibsE.debito + ibsM.debito
+                return (
+                  <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
+                    {totalDebitos > 0 ? 'R$ ' + fmtBR(totalDebitos) : '—'}
+                  </td>
+                )
+              })}
+            </tr>
+            <tr className="rt-row">
+              <td className="rt-td rt-td-label">Créditos compensáveis</td>
+              {dados.map(({ ano, pis, cofins, cbs, ibsE, ibsM }) => {
+                const totalCreditos = pis.credito + cofins.credito + cbs.credito + ibsE.credito + ibsM.credito
+                return (
+                  <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
+                    {totalCreditos > 0 ? 'R$ ' + fmtBR(totalCreditos) : '—'}
+                  </td>
+                )
+              })}
+            </tr>
+            <tr className="rt-row">
+              <td className="rt-td rt-td-label">Total a recolher</td>
+              {dados.map(({ ano, totalAPagar }) => (
+                <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
+                  {totalAPagar > 0 ? 'R$ ' + fmtBR(totalAPagar) : '—'}
+                </td>
+              ))}
+            </tr>
+            <tr className="rt-row">
+              <td className="rt-td rt-td-label">Carga efetiva</td>
+              {dados.map(({ ano, cargaEfetiva }) => (
                 <td key={ano} className={`rt-td rt-td-num marg ${ano === anoAtivo ? 'active' : ''}`}>
-                  {margem > 0 ? fmtPct(margem) : '—'}
+                  {cargaEfetiva > 0 ? fmtPct(cargaEfetiva) : '—'}
                 </td>
               ))}
             </tr>
@@ -121,21 +151,13 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 </td>
               ))}
             </tr>
-            <tr className="rt-row">
-              <td className="rt-td rt-td-label">Total tributos</td>
-              {dados.map(({ ano, tributos }) => (
-                <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
-                  {tributos > 0 ? 'R$ ' + fmtBR(tributos) : '—'}
-                </td>
-              ))}
-            </tr>
             <tr className="rt-row rt-row-delta">
               <td className="rt-td rt-td-label">Δ Tributos</td>
-              {dados.map(({ ano, deltaTribPct }) => (
+              {dados.map(({ ano, deltaTotal }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
-                  {deltaTribPct === null ? '—' : (
-                    <span className={deltaTribPct > 0 ? 'delta-up' : deltaTribPct < 0 ? 'delta-down' : ''}>
-                      {fmtDeltaPct(deltaTribPct)}
+                  {deltaTotal === null ? '—' : (
+                    <span className={deltaTotal > 0 ? 'delta-up' : deltaTotal < 0 ? 'delta-down' : ''}>
+                      {fmtDeltaPct(deltaTotal)}
                     </span>
                   )}
                 </td>
@@ -149,7 +171,6 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
         <BreakdownAno
           estado={estado}
           ano={expandido}
-          receita={dados.find(d => d.ano === expandido)!.receita}
           onFechar={() => setExpandido(null)}
         />
       )}
@@ -158,63 +179,78 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
 }
 
 function BreakdownAno({
-  estado, ano, receita, onFechar,
+  estado, ano, onFechar,
 }: {
   estado: Estado
   ano: number
-  receita: number
   onFechar: () => void
 }) {
-  const t = resumoTributosBrutos(estado, ano)
+  const a = apurarAno(estado, ano)
 
-  const linhas = [
-    { label: 'PIS',           val: t.pis,  cor: 'dot-pis'    },
-    { label: 'COFINS',        val: t.cof,  cor: 'dot-cofins' },
-    { label: 'CBS',           val: t.cbs,  cor: 'dot-cbs'    },
-    { label: 'IBS Estadual',  val: t.ibsE, cor: 'dot-ibs'    },
-    { label: 'IBS Municipal', val: t.ibsM, cor: 'dot-ibs'    },
-  ].filter(l => l.val > 0)
-
-  const carga = receita > 0 ? (t.total / receita) * 100 : 0
+  const tributos = [
+    { label: 'PIS',           data: a.pis,    cor: 'dot-pis',    so2026: true },
+    { label: 'COFINS',        data: a.cofins, cor: 'dot-cofins', so2026: true },
+    { label: 'CBS',           data: a.cbs,    cor: 'dot-cbs',    so2026: false },
+    { label: 'IBS Estadual',  data: a.ibsE,   cor: 'dot-ibs',    so2026: false },
+    { label: 'IBS Municipal', data: a.ibsM,   cor: 'dot-ibs',    so2026: false },
+  ].filter(t => !(t.so2026 && ano !== 2026))
 
   return (
     <div className="rt-breakdown">
       <div className="rt-bd-header">
-        <span className="rt-bd-title">Breakdown {ano}</span>
+        <span className="rt-bd-title">Apuração {ano}</span>
         <button className="rt-bd-close" onClick={onFechar}>✕</button>
       </div>
 
-      <div className="rt-bd-rows">
-        {linhas.map(l => (
-          <div key={l.label} className="rt-bd-row">
-            <span className="rt-bd-label">
-              <span className={`tc-dot ${l.cor}`} />
-              {l.label}
+      <div className="rt-bd-apuracao-table">
+        <div className="rt-bd-apuracao-header">
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-tributo">Tributo</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Débito</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Crédito</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Saldo</span>
+        </div>
+
+        {tributos.map(t => (
+          <div key={t.label} className="rt-bd-apuracao-row">
+            <span className="rt-bd-apuracao-col rt-bd-apuracao-tributo">
+              <span className={`tc-dot ${t.cor}`} />
+              {t.label}
             </span>
-            <div className="rt-bd-bar-track">
-              <div
-                className="rt-bd-bar-fill"
-                style={{ width: t.total > 0 ? `${(l.val / t.total) * 100}%` : '0%' }}
-              />
-            </div>
-            <span className="rt-bd-val">R$ {fmtBR(l.val) || '—'}</span>
-            <span className="rt-bd-pct">
-              {t.total > 0
-                ? ((l.val / t.total) * 100).toFixed(1).replace('.', ',') + '%'
-                : '—'}
+            <span className="rt-bd-apuracao-col rt-bd-apuracao-num">
+              R$ {fmtBR(t.data.debito)}
+            </span>
+            <span className="rt-bd-apuracao-col rt-bd-apuracao-num">
+              R$ {fmtBR(t.data.credito)}
+            </span>
+            <span className={`rt-bd-apuracao-col rt-bd-apuracao-num ${t.data.saldo > 0 ? 'saldo-positivo' : t.data.saldo < 0 ? 'saldo-credor' : ''}`}>
+              R$ {fmtBR(Math.abs(t.data.saldo))}
             </span>
           </div>
         ))}
+
+        <div className="rt-bd-apuracao-row rt-bd-apuracao-total">
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-tributo">Total</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">
+            R$ {fmtBR(a.pis.debito + a.cofins.debito + a.cbs.debito + a.ibsE.debito + a.ibsM.debito)}
+          </span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">
+            R$ {fmtBR(a.pis.credito + a.cofins.credito + a.cbs.credito + a.ibsE.credito + a.ibsM.credito)}
+          </span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">
+            R$ {fmtBR(a.totalAPagar)}
+          </span>
+        </div>
       </div>
 
       <div className="rt-bd-footer">
-        <span className="rt-bd-footer-label">Total tributos</span>
-        <span className="rt-bd-footer-val">{t.total > 0 ? 'R$ ' + fmtBR(t.total) : '—'}</span>
-        {carga > 0 && (
-          <span className="rt-bd-footer-carga">
-            {carga.toFixed(2).replace('.', ',')}% da receita
-          </span>
-        )}
+        <div className="rt-bd-footer-row">
+          <span className="rt-bd-footer-label">Carga bruta s/ receita</span>
+          <span className="rt-bd-footer-val">{a.cargaBruta.toFixed(2).replace('.', ',')}%</span>
+        </div>
+        <div className="rt-bd-footer-row">
+          <span className="rt-bd-footer-label">Carga efetiva (c/ créditos)</span>
+          <span className="rt-bd-footer-val">{a.cargaEfetiva.toFixed(2).replace('.', ',')}%</span>
+        </div>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import type { DadosOperacao, Estado, Operacao } from '@/types/simulador'
+import type { ApuracaoAno, DadosOperacao, Estado, Operacao } from '@/types/simulador'
 
 export const OPERACOES: Operacao[] = [
   { key: 'rec_locacao',  label: 'Rec. Locação',        tipo: 'debito'  },
@@ -200,6 +200,67 @@ export function resumoTributosBrutos(estado: Estado, ano: number) {
     ibsM += d.valIbsM
   })
   return { pis, cof, cbs, ibsE, ibsM, total: pis + cof + cbs + ibsE + ibsM }
+}
+
+/** Apuração de tributos com débito/crédito/saldo separados por tributo conforme LC 214/2025. */
+export function apurarAno(estado: Estado, ano: number): ApuracaoAno {
+  const zero = () => ({ debito: 0, credito: 0, saldo: 0 })
+
+  const result: ApuracaoAno = {
+    pis: zero(),
+    cofins: zero(),
+    cbs: zero(),
+    ibs: zero(),
+    ibsE: zero(),
+    ibsM: zero(),
+    receita: 0,
+    totalAPagar: 0,
+    saldoCreedor: 0,
+    cargaEfetiva: 0,
+    cargaBruta: 0,
+  }
+
+  OPERACOES.forEach(op => {
+    const d = estado[ano][op.key]
+    const isDebito = op.tipo === 'debito'
+
+    if (isDebito) result.receita += d.valor
+
+    const accumulate = (tributo: keyof Pick<ApuracaoAno, 'pis' | 'cofins' | 'cbs' | 'ibsE' | 'ibsM'>, val: number) => {
+      if (isDebito) result[tributo].debito += val
+      else result[tributo].credito += val
+    }
+
+    accumulate('pis', d.valPis)
+    accumulate('cofins', d.valCof)
+    accumulate('cbs', d.valCbs)
+    accumulate('ibsE', d.valIbsE)
+    accumulate('ibsM', d.valIbsM)
+  })
+
+  // Calcular saldos por tributo
+  ;(['pis', 'cofins', 'cbs', 'ibsE', 'ibsM'] as const).forEach(t => {
+    result[t].saldo = result[t].debito - result[t].credito
+  })
+
+  // IBS consolidado = E + M
+  result.ibs.debito = result.ibsE.debito + result.ibsM.debito
+  result.ibs.credito = result.ibsE.credito + result.ibsM.credito
+  result.ibs.saldo = result.ibsE.saldo + result.ibsM.saldo
+
+  // Totais
+  const todosOsSaldos = [result.pis, result.cofins, result.cbs, result.ibsE, result.ibsM]
+  result.totalAPagar = todosOsSaldos.reduce((acc, t) => acc + Math.max(0, t.saldo), 0)
+  result.saldoCreedor = todosOsSaldos.reduce((acc, t) => acc + Math.abs(Math.min(0, t.saldo)), 0)
+
+  // Cargas
+  if (result.receita > 0) {
+    result.cargaEfetiva = (result.totalAPagar / result.receita) * 100
+    const totalDebitoTrib = result.pis.debito + result.cofins.debito + result.cbs.debito + result.ibsE.debito + result.ibsM.debito
+    result.cargaBruta = (totalDebitoTrib / result.receita) * 100
+  }
+
+  return result
 }
 
 export function hasData(estado: Estado, ano: number): boolean {
