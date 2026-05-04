@@ -1,6 +1,7 @@
 'use client'
 
 import { OPERACOES, fmtBR, fmtCompacto } from '@/lib/simulador'
+import { NumberInputBR } from './NumberInputBR'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 interface TributoCardProps {
@@ -88,7 +89,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
           {cfg.label}
           <span className={`tc-badge ${badgeClass}`}>{badgeLabel}</span>
         </span>
-        <span className="tc-total">{fmtCompacto(total)}</span>
+        <span className="tc-total">{total > 0 ? 'R$ ' + fmtBR(total) : '—'}</span>
       </div>
 
       {/* Header colunas */}
@@ -118,23 +119,21 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   value={d.baseIbs ? fmtBR(d.baseIbs) : ''}
                   placeholder="0,00"
                 />
-                <input
+                <NumberInputBR
+                  key={`ibs-e-${op.key}-${ano}`}
                   className="field-inp aliq"
-                  type="number"
-                  step="0.0001"
                   placeholder="Est.%"
                   title="Pré-preenchido conforme LC 214/2025 · editável"
-                  value={d.aliqIbsE || ''}
-                  onChange={e => onAliquotaChange(op.key, 'aliqIbsE', parseFloat(e.target.value) || 0)}
+                  value={d.aliqIbsE}
+                  onChange={valor => onAliquotaChange(op.key, 'aliqIbsE', valor)}
                 />
-                <input
+                <NumberInputBR
+                  key={`ibs-m-${op.key}-${ano}`}
                   className="field-inp aliq"
-                  type="number"
-                  step="0.0001"
                   placeholder="Mun.%"
                   title="Pré-preenchido conforme LC 214/2025 · editável"
-                  value={d.aliqIbsM || ''}
-                  onChange={e => onAliquotaChange(op.key, 'aliqIbsM', parseFloat(e.target.value) || 0)}
+                  value={d.aliqIbsM}
+                  onChange={valor => onAliquotaChange(op.key, 'aliqIbsM', valor)}
                 />
                 <input
                   className="field-inp result"
@@ -169,14 +168,13 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                 value={baseDisplay ? fmtBR(baseDisplay) : ''}
                 placeholder="0,00"
               />
-              <input
+              <NumberInputBR
+                key={`${tributo}-${op.key}-${ano}`}
                 className="field-inp aliq"
-                type="number"
-                step="0.0001"
                 placeholder="%"
                 title="Pré-preenchido conforme LC 214/2025 · editável"
-                value={(d[campos.aliq] as number) || ''}
-                onChange={e => onAliquotaChange(op.key, campos.aliq, parseFloat(e.target.value) || 0)}
+                value={d[campos.aliq] as number}
+                onChange={valor => onAliquotaChange(op.key, campos.aliq, valor)}
               />
               <input
                 className="field-inp result"

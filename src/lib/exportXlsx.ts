@@ -214,14 +214,14 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
 
   // Row 3 — section header
   ws.getRow(3).height = 20
-  ws.mergeCells('A3:H3')
+  ws.mergeCells('A3:I3')
   const debCell = ws.getCell('A3')
   debCell.value = 'DÉBITOS'
   applySectionStyle(debCell)
 
   // Row 4 — column headers for DÉBITOS
   const debHdrs = [
-    'Ano', 'Rec. Locação', 'Venda Ativo',
+    'Ano', 'Rec. Locação', 'Receita Financeira', 'Venda Ativo',
     'Total Débitos', 'CBS Déb.', 'IBS Est. Déb.', 'IBS Mun. Déb.', 'Total Trib. Déb.',
   ]
   const debHdrRow = ws.getRow(4)
@@ -233,18 +233,20 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
   })
 
   // Rows 5–12 — débito data
-  const debTotals = new Array(8).fill(0)
+  const debTotals = new Array(9).fill(0)
   for (let ai = 0; ai < ANOS.length; ai++) {
     const ano = ANOS[ai]
     const rl = zero(estado, ano, 'rec_locacao')
+    const rf = zero(estado, ano, 'receita_financeira')
     const va = zero(estado, ano, 'venda_ativo')
-    const totalDeb = rl.valor + va.valor
-    const cbsDeb   = rl.valCbs + va.valCbs
-    const ibsEDeb  = rl.valIbsE + va.valIbsE
-    const ibsMDeb  = rl.valIbsM + va.valIbsM
-    const tribDeb  = cbsDeb + ibsEDeb + ibsMDeb + rl.valPis + rl.valCof + va.valPis + va.valCof
+    const totalDeb = rl.valor + rf.valor + va.valor
+    const cbsDeb   = rl.valCbs + rf.valCbs + va.valCbs
+    const ibsEDeb  = rl.valIbsE + rf.valIbsE + va.valIbsE
+    const ibsMDeb  = rl.valIbsM + rf.valIbsM + va.valIbsM
+    const tribDeb  = cbsDeb + ibsEDeb + ibsMDeb +
+      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
 
-    const vals = [ano, rl.valor, va.valor, totalDeb, cbsDeb, ibsEDeb, ibsMDeb, tribDeb]
+    const vals = [ano, rl.valor, rf.valor, va.valor, totalDeb, cbsDeb, ibsEDeb, ibsMDeb, tribDeb]
     const row = ws.getRow(5 + ai)
     row.height = 18
     vals.forEach((v, ci) => {
@@ -256,7 +258,7 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
         setMoney(cell, v as number, ai)
       }
     })
-    for (let ci = 1; ci < 8; ci++) debTotals[ci] += vals[ci] as number
+    for (let ci = 1; ci < 9; ci++) debTotals[ci] += vals[ci] as number
   }
 
   // Row 13 — TOTAL
@@ -264,7 +266,7 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
   debTotalRow.height = 18
   debTotalRow.getCell(1).value = 'TOTAL'
   applyTotalStyle(debTotalRow.getCell(1))
-  for (let ci = 1; ci < 8; ci++) {
+  for (let ci = 1; ci < 9; ci++) {
     const cell = debTotalRow.getCell(ci + 1)
     cell.value = debTotals[ci]
     cell.numFmt = FMT_MONEY
@@ -368,10 +370,12 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
 
     // Débitos
     const rl = zero(estado, ano, 'rec_locacao')
+    const rf = zero(estado, ano, 'receita_financeira')
     const va = zero(estado, ano, 'venda_ativo')
-    const cbsDeb  = rl.valCbs + va.valCbs + rl.valPis + rl.valCof + va.valPis + va.valCof
-    const ibsEDeb = rl.valIbsE + va.valIbsE
-    const ibsMDeb = rl.valIbsM + va.valIbsM
+    const cbsDeb  = rl.valCbs + rf.valCbs + va.valCbs +
+      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
+    const ibsEDeb = rl.valIbsE + rf.valIbsE + va.valIbsE
+    const ibsMDeb = rl.valIbsM + rf.valIbsM + va.valIbsM
 
     // Créditos
     const cs = zero(estado, ano, 'cred_serv')
@@ -429,6 +433,10 @@ export async function exportarXlsx(estado: Estado): Promise<void> {
 
   addDetailSheet(wb, 'Rec. Locação', [
     { key: 'rec_locacao', label: OPERACOES.find(o => o.key === 'rec_locacao')!.label },
+  ], estado)
+
+  addDetailSheet(wb, 'Receita Financeira', [
+    { key: 'receita_financeira', label: OPERACOES.find(o => o.key === 'receita_financeira')!.label },
   ], estado)
 
   addDetailSheet(wb, 'Ativo', [

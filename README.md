@@ -22,6 +22,7 @@ Ferramenta web para simulação do impacto da **Reforma Tributária (LC 214/2025
 | Operação | Tipo |
 |---|---|
 | Rec. Locação | Débito |
+| Receita Financeira | Débito |
 | Venda Ativo | Débito |
 | Serv. Tomados | Crédito |
 | Compra Ativo | Crédito |

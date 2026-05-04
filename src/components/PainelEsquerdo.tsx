@@ -1,13 +1,16 @@
 'use client'
 
 import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
-import type { Estado } from '@/types/simulador'
+import { NumberInputBR } from './NumberInputBR'
+import { PainelAliquotas } from './PainelAliquotas'
+import type { Estado, DadosOperacao } from '@/types/simulador'
 
 interface PainelEsquerdoProps {
   estado: Estado
   anoAtivo: number
   onSetAno: (ano: number) => void
   onValorChange: (key: string, valor: number) => void
+  onAliquotasGlobais: (aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>) => void
 }
 
 export function PainelEsquerdo({
@@ -15,6 +18,7 @@ export function PainelEsquerdo({
   anoAtivo,
   onSetAno,
   onValorChange,
+  onAliquotasGlobais,
 }: PainelEsquerdoProps) {
   // totais do rodapé
   let totalDeb = 0, totalCred = 0
@@ -45,6 +49,12 @@ export function PainelEsquerdo({
         ))}
       </div>
 
+      {/* Painel de alíquotas */}
+      <PainelAliquotas
+        anoAtivo={anoAtivo}
+        onAplicarAliquotas={onAliquotasGlobais}
+      />
+
       {/* Cards de receita */}
       <div className="receitas-scroll">
         {OPERACOES.map(op => {
@@ -62,12 +72,12 @@ export function PainelEsquerdo({
               </div>
               <div className="rec-valor-row">
                 <span className="rec-prefix">R$</span>
-                <input
+                <NumberInputBR
+                  key={`${op.key}-${anoAtivo}`}
                   className="rec-input"
-                  type="number"
                   placeholder="0,00"
-                  value={d.valor || ''}
-                  onChange={e => onValorChange(op.key, parseFloat(e.target.value) || 0)}
+                  value={d.valor}
+                  onChange={valor => onValorChange(op.key, valor)}
                   onClick={e => e.stopPropagation()}
                 />
               </div>
