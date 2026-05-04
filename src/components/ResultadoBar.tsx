@@ -11,7 +11,7 @@ interface ResultadoBarProps {
 
 export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) {
   return (
-    <div className="resultado-bar">
+    <div className="resultado-bar" data-tour="resultado-bar">
       {ANOS.map((ano, idx) => {
         const res = resultadoAno(estado, ano)
         const anoAnterior = idx > 0 ? ANOS[idx - 1] : null

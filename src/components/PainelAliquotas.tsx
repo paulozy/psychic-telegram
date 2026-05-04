@@ -47,7 +47,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
   ].some(v => v !== '')
 
   return (
-    <div className="painel-aliquotas">
+    <div className="painel-aliquotas" data-tour="painel-aliquotas">
       <button
         className="painel-aliquotas-toggle"
         onClick={() => setExpandido(!expandido)}

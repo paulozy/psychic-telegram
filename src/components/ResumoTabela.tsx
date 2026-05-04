@@ -60,7 +60,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
   }
 
   return (
-    <div className="resumo-tabela">
+    <div className="resumo-tabela" data-tour="resumo-tabela">
       <div className="rt-title">Resumo por ano</div>
 
       <div className="rt-scroll">

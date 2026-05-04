@@ -36,7 +36,7 @@ export function PainelEsquerdo({
       </div>
 
       {/* Ano tabs */}
-      <div className="ano-tabs">
+      <div className="ano-tabs" data-tour="ano-tabs">
         {ANOS.map(ano => (
           <button
             key={ano}
@@ -56,7 +56,7 @@ export function PainelEsquerdo({
       />
 
       {/* Cards de receita */}
-      <div className="receitas-scroll">
+      <div className="receitas-scroll" data-tour="operacoes">
         {OPERACOES.map(op => {
           const d = estado[anoAtivo][op.key]
           return (

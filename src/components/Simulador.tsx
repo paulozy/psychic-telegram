@@ -8,6 +8,8 @@ import { ResultadoBar } from './ResultadoBar'
 import { TributoCard } from './TributoCard'
 import { ResumoTabela } from './ResumoTabela'
 import { ImportPreviewModal } from './ImportPreviewModal'
+import { Tutorial } from './Tutorial/Tutorial'
+import { useTutorial } from './Tutorial/useTutorial'
 import {
   estadoInicial,
   atualizarValor,
@@ -30,6 +32,7 @@ export function Simulador() {
   const [importErrors, setImportErrors] = useState<ImportError[]>([])
   const [modalAberto, setModalAberto] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const tutorial = useTutorial()
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -113,6 +116,18 @@ export function Simulador() {
     setImportErrors([])
   }, [])
 
+  const handleInserirExemplo = useCallback(() => {
+    setEstado(prev => atualizarValor(prev, 2026, 'rec_locacao', 1_000_000))
+    setAnoAtivo(2026)
+  }, [setEstado])
+
+  const handleLimparExemplo = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v2')
+    }
+    setEstado(estadoInicial())
+  }, [setEstado])
+
   const is2026 = anoAtivo === 2026
 
   return (
@@ -122,6 +137,13 @@ export function Simulador() {
         onExportar={handleExportar}
         onBaixarTemplate={handleBaixarTemplate}
         onImportar={handleImportarClick}
+        onAbrirTutorial={() => {
+          if (!tutorial.desktop) {
+            showToast('Tutorial disponível apenas em desktop')
+            return
+          }
+          tutorial.abrir()
+        }}
       />
       <input
         ref={fileInputRef}
@@ -147,7 +169,7 @@ export function Simulador() {
             onSetAno={handleSetAno}
           />
 
-          <div className="impostos-area">
+          <div className="impostos-area" data-tour="tributos">
             <ResumoTabela
               estado={estado}
               anoAtivo={anoAtivo}
@@ -205,6 +227,13 @@ export function Simulador() {
           onCancelar={handleCancelarImport}
         />
       )}
+
+      <Tutorial
+        ctrl={tutorial}
+        pausado={modalAberto}
+        onInserirExemplo={handleInserirExemplo}
+        onLimparExemplo={handleLimparExemplo}
+      />
 
       {/* Toast */}
       <div className={`toast ${toastVisible ? 'show' : ''}`}>{toast}</div>
