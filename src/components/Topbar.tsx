@@ -3,9 +3,11 @@
 interface TopbarProps {
   onLimpar: () => void
   onExportar: () => void
+  onBaixarTemplate: () => void
+  onImportar: () => void
 }
 
-export function Topbar({ onLimpar, onExportar }: TopbarProps) {
+export function Topbar({ onLimpar, onExportar, onBaixarTemplate, onImportar }: TopbarProps) {
   return (
     <header className="topbar">
       <div className="logo">
@@ -16,6 +18,8 @@ export function Topbar({ onLimpar, onExportar }: TopbarProps) {
       </div>
       <div className="topbar-right">
         <button className="btn btn-ghost" onClick={onLimpar}>Limpar</button>
+        <button className="btn btn-ghost" onClick={onBaixarTemplate}>Baixar Template</button>
+        <button className="btn btn-ghost" onClick={onImportar}>Importar XLSX</button>
         <button className="btn btn-primary" onClick={onExportar}>Exportar XLSX</button>
       </div>
     </header>

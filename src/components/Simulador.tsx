@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useState } from 'react'
 import { Topbar } from './Topbar'
 import { PainelEsquerdo } from './PainelEsquerdo'
 import { ResultadoBar } from './ResultadoBar'
 import { TributoCard } from './TributoCard'
 import { ResumoTabela } from './ResumoTabela'
+import { ImportPreviewModal } from './ImportPreviewModal'
 import {
   estadoInicial,
   atualizarValor,
@@ -15,14 +16,20 @@ import {
 } from '@/lib/simulador'
 import { useLocalStorage } from '@/lib/useLocalStorage'
 import { exportarXlsx } from '@/lib/exportXlsx'
+import { gerarTemplate } from '@/lib/excel/template'
+import { importarXlsx, type ImportError } from '@/lib/excel/import'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v1', estadoBase)
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v2', estadoBase)
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
+  const [importPreview, setImportPreview] = useState<{ estado: Estado; mudancas: number } | null>(null)
+  const [importErrors, setImportErrors] = useState<ImportError[]>([])
+  const [modalAberto, setModalAberto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -55,7 +62,7 @@ export function Simulador() {
 
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v1')
+      localStorage.removeItem('arval-simulador-v2')
     }
     setEstado(estadoInicial())
     showToast('Dados limpos')
@@ -66,11 +73,63 @@ export function Simulador() {
     showToast('Exportação concluída')
   }, [estado])
 
+  const handleBaixarTemplate = useCallback(async () => {
+    await gerarTemplate()
+    showToast('Template baixado')
+  }, [])
+
+  const handleImportarClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const result = await importarXlsx(file, estado)
+    if (result.ok) {
+      setImportPreview({ estado: result.estado, mudancas: result.mudancas })
+      setImportErrors([])
+    } else {
+      setImportPreview(null)
+      setImportErrors(result.errors)
+    }
+    setModalAberto(true)
+  }, [estado])
+
+  const handleConfirmarImport = useCallback(() => {
+    if (importPreview) {
+      setEstado(importPreview.estado)
+      showToast(importPreview.mudancas === 0 ? 'Nenhuma alteração' : 'Importação concluída')
+    }
+    setModalAberto(false)
+    setImportPreview(null)
+    setImportErrors([])
+  }, [importPreview])
+
+  const handleCancelarImport = useCallback(() => {
+    setModalAberto(false)
+    setImportPreview(null)
+    setImportErrors([])
+  }, [])
+
   const is2026 = anoAtivo === 2026
 
   return (
     <div className="shell">
-      <Topbar onLimpar={handleLimpar} onExportar={handleExportar} />
+      <Topbar
+        onLimpar={handleLimpar}
+        onExportar={handleExportar}
+        onBaixarTemplate={handleBaixarTemplate}
+        onImportar={handleImportarClick}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        onChange={handleFileSelected}
+        style={{ display: 'none' }}
+      />
 
       <div className="body">
         <PainelEsquerdo
@@ -137,6 +196,15 @@ export function Simulador() {
           </div>
         </div>
       </div>
+
+      {modalAberto && (
+        <ImportPreviewModal
+          mudancas={importPreview?.mudancas ?? null}
+          errors={importErrors}
+          onConfirmar={handleConfirmarImport}
+          onCancelar={handleCancelarImport}
+        />
+      )}
 
       {/* Toast */}
       <div className={`toast ${toastVisible ? 'show' : ''}`}>{toast}</div>

@@ -1,12 +1,13 @@
 import type { ApuracaoAno, DadosOperacao, Estado, Operacao } from '@/types/simulador'
 
 export const OPERACOES: Operacao[] = [
-  { key: 'rec_locacao',  label: 'Rec. Locação',        tipo: 'debito'  },
-  { key: 'venda_ativo',  label: 'Venda Ativo',          tipo: 'debito'  },
-  { key: 'cred_serv',    label: 'Serv. Tomados',        tipo: 'credito' },
-  { key: 'compra_ativo', label: 'Compra Ativo',         tipo: 'credito' },
-  { key: 'cred_deprec',  label: 'Deprec. Fiscal',       tipo: 'credito' },
-  { key: 'cred_juros',   label: 'Juros s/ Empréstimo',  tipo: 'credito' },
+  { key: 'rec_locacao',         label: 'Rec. Locação',        tipo: 'debito'  },
+  { key: 'receita_financeira',  label: 'Receita Financeira',  tipo: 'debito'  },
+  { key: 'venda_ativo',         label: 'Venda Ativo',          tipo: 'debito'  },
+  { key: 'cred_serv',           label: 'Serv. Tomados',        tipo: 'credito' },
+  { key: 'compra_ativo',        label: 'Compra Ativo',         tipo: 'credito' },
+  { key: 'cred_deprec',         label: 'Deprec. Fiscal',       tipo: 'credito' },
+  { key: 'cred_juros',          label: 'Juros s/ Empréstimo',  tipo: 'credito' },
 ]
 
 export const ANOS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033]
@@ -24,7 +25,8 @@ type AliquotaOp = {
 
 export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   2026: {
-    rec_locacao:  { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
+    rec_locacao:        { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
+    receita_financeira: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
     venda_ativo:  { aliqPis: 0,    aliqCof: 0,    aliqCbs: 0,    aliqIbsE: 0.10, aliqIbsM: 0    },
     cred_serv:    { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
     compra_ativo: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
@@ -32,7 +34,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0,    aliqCof: 0,    aliqCbs: 0,    aliqIbsE: 0.10, aliqIbsM: 0    },
   },
   2027: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
@@ -40,7 +43,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 10.85, aliqIbsE: 0.05, aliqIbsM: 0.05 },
   },
   2028: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
@@ -48,7 +52,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 10.85, aliqIbsE: 0.05, aliqIbsM: 0.05 },
   },
   2029: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 1.60, aliqIbsM: 0.25, pRedIbs: 90 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
@@ -56,7 +61,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.00, aliqIbsE: 1.60, aliqIbsM: 0.25 },
   },
   2030: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50, pRedIbs: 80 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
@@ -64,7 +70,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.15, aliqIbsE: 3.20, aliqIbsM: 0.50 },
   },
   2031: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75, pRedIbs: 70 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
@@ -72,7 +79,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.30, aliqIbsE: 4.80, aliqIbsM: 0.75 },
   },
   2032: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00, pRedIbs: 60 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
@@ -80,7 +88,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.50, aliqIbsE: 6.40, aliqIbsM: 1.00 },
   },
   2033: {
-    rec_locacao:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
+    rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
