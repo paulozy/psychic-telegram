@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { NumberInputBR } from './NumberInputBR'
+import { TOOLTIPS_CONCEITO, TOOLTIPS_TRIBUTO } from '@/lib/tooltips'
 import type { DadosOperacao } from '@/types/simulador'
 
 interface PainelAliquotasProps {
@@ -51,6 +52,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
       <button
         className="painel-aliquotas-toggle"
         onClick={() => setExpandido(!expandido)}
+        title={TOOLTIPS_CONCEITO.configurarAliqs}
       >
         ⚙ Configurar alíquotas
         {temValores && <span className="painel-aliquotas-dot" />}
@@ -63,7 +65,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
           {is2026 && (
             <>
               <div className="pa-field">
-                <label className="pa-label">PIS (%)</label>
+                <label className="pa-label" title={TOOLTIPS_TRIBUTO.pis}>PIS (%)</label>
                 <NumberInputBR
                   className="pa-input"
                   placeholder="ex: 1,65"
@@ -73,7 +75,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
               </div>
 
               <div className="pa-field">
-                <label className="pa-label">COFINS (%)</label>
+                <label className="pa-label" title={TOOLTIPS_TRIBUTO.cofins}>COFINS (%)</label>
                 <NumberInputBR
                   className="pa-input"
                   placeholder="ex: 7,60"
@@ -86,7 +88,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
 
           {!is2026 && (
             <div className="pa-field">
-              <label className="pa-label">CBS (%)</label>
+              <label className="pa-label" title={TOOLTIPS_TRIBUTO.cbs}>CBS (%)</label>
               <NumberInputBR
                 className="pa-input"
                 placeholder="ex: 8,50"
@@ -98,7 +100,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
 
           {is2026 && (
             <div className="pa-field">
-              <label className="pa-label">CBS (%)</label>
+              <label className="pa-label" title={TOOLTIPS_TRIBUTO.cbs}>CBS (%)</label>
               <NumberInputBR
                 className="pa-input"
                 placeholder="ex: 0,90"
@@ -109,7 +111,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
           )}
 
           <div className="pa-field">
-            <label className="pa-label">IBS Estadual (%)</label>
+            <label className="pa-label" title={TOOLTIPS_TRIBUTO.ibsE}>IBS Estadual (%)</label>
             <NumberInputBR
               className="pa-input"
               placeholder="ex: 0,10"
@@ -119,7 +121,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
           </div>
 
           <div className="pa-field">
-            <label className="pa-label">IBS Municipal (%)</label>
+            <label className="pa-label" title={TOOLTIPS_TRIBUTO.ibsM}>IBS Municipal (%)</label>
             <NumberInputBR
               className="pa-input"
               placeholder="ex: 0"
@@ -132,6 +134,7 @@ export function PainelAliquotas({ anoAtivo, onAplicarAliquotas }: PainelAliquota
             className="pa-btn-aplicar"
             onClick={handleAplicar}
             disabled={!temValores}
+            title={TOOLTIPS_CONCEITO.aplicarAliqs}
           >
             Aplicar a todas as operações
           </button>

@@ -3,6 +3,7 @@
 import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
 import { NumberInputBR } from './NumberInputBR'
 import { PainelAliquotas } from './PainelAliquotas'
+import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO } from '@/lib/tooltips'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 interface PainelEsquerdoProps {
@@ -10,7 +11,16 @@ interface PainelEsquerdoProps {
   anoAtivo: number
   onSetAno: (ano: number) => void
   onValorChange: (key: string, valor: number) => void
+  onReducaoChange: (key: string, valor: number) => void
   onAliquotasGlobais: (aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>) => void
+}
+
+function labelReducao(opKey: string): string {
+  return opKey === 'venda_ativo' ? 'VLA' : 'Redução'
+}
+
+function tooltipReducao(opKey: string): string {
+  return opKey === 'venda_ativo' ? TOOLTIPS_CONCEITO.vla : TOOLTIPS_CONCEITO.reducaoBase
 }
 
 export function PainelEsquerdo({
@@ -18,6 +28,7 @@ export function PainelEsquerdo({
   anoAtivo,
   onSetAno,
   onValorChange,
+  onReducaoChange,
   onAliquotasGlobais,
 }: PainelEsquerdoProps) {
   // totais do rodapé
@@ -65,8 +76,11 @@ export function PainelEsquerdo({
               className={`rec-card ${op.tipo === 'credito' ? 'tipo-cred' : ''}`}
             >
               <div className="rec-head">
-                <span className="rec-name">{op.label}</span>
-                <span className={`rec-tag ${op.tipo === 'debito' ? 'tag-deb' : 'tag-cred'}`}>
+                <span className="rec-name" title={TOOLTIPS_OPERACAO[op.key]}>{op.label}</span>
+                <span
+                  className={`rec-tag ${op.tipo === 'debito' ? 'tag-deb' : 'tag-cred'}`}
+                  title={op.tipo === 'debito' ? TOOLTIPS_CONCEITO.badgeDebito : TOOLTIPS_CONCEITO.badgeCredito}
+                >
                   {op.tipo === 'debito' ? 'DÉB' : 'CRÉ'}
                 </span>
               </div>
@@ -81,6 +95,32 @@ export function PainelEsquerdo({
                   onClick={e => e.stopPropagation()}
                 />
               </div>
+              {op.tipo === 'debito' && (
+                <>
+                  <div className="rec-reducao-row">
+                    <span className="rec-reducao-label" title={tooltipReducao(op.key)}>
+                      {labelReducao(op.key)}
+                    </span>
+                    <span className="rec-prefix">R$</span>
+                    <NumberInputBR
+                      key={`red-${op.key}-${anoAtivo}`}
+                      className="rec-input"
+                      placeholder="0,00"
+                      value={d.reducaoBase}
+                      onChange={valor => onReducaoChange(op.key, valor)}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </div>
+                  {d.valor > 0 && d.reducaoBase <= d.valor && (
+                    <small className="rec-base-efetiva">
+                      Base efetiva: R$ {fmtBR(Math.max(0, d.valor - d.reducaoBase))}
+                    </small>
+                  )}
+                  {d.valor > 0 && d.reducaoBase > d.valor && (
+                    <small className="rec-base-erro">Redução excede o valor</small>
+                  )}
+                </>
+              )}
             </div>
           )
         })}
@@ -89,12 +129,12 @@ export function PainelEsquerdo({
       {/* Rodapé totais */}
       <div className="left-footer">
         <div className="ft-row">
-          <span className="ft-label">Total débitos</span>
+          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalDebitos}>Total débitos</span>
           <span className="ft-val deb">{totalDeb > 0 ? 'R$ ' + fmtBR(totalDeb) : '—'}</span>
         </div>
         <hr className="ft-divider" />
         <div className="ft-row">
-          <span className="ft-label">Total créditos</span>
+          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalCreditos}>Total créditos</span>
           <span className="ft-val cred">{totalCred > 0 ? 'R$ ' + fmtBR(totalCred) : '—'}</span>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { OPERACOES, fmtBR, fmtCompacto } from '@/lib/simulador'
 import { NumberInputBR } from './NumberInputBR'
+import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO, TOOLTIPS_TRIBUTO } from '@/lib/tooltips'
 import type { Estado, DadosOperacao } from '@/types/simulador'
 
 interface TributoCardProps {
@@ -81,10 +82,20 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
     if (tributo === 'ibs')    total += d.valIbsE + d.valIbsM
   })
 
+  const tooltipTributo = TOOLTIPS_TRIBUTO[tributo]
+
+  function tooltipColuna(col: string): string | undefined {
+    if (col === 'Operação') return TOOLTIPS_CONCEITO.colunaOperacao
+    if (col.startsWith('Base')) return TOOLTIPS_CONCEITO.colunaBase
+    if (col.startsWith('Alíq')) return TOOLTIPS_CONCEITO.colunaAliq
+    if (col.startsWith('Valor') || col === 'IBS Estadual' || col === 'IBS Municipal') return TOOLTIPS_CONCEITO.colunaValor
+    return undefined
+  }
+
   return (
     <div className="tributo-card">
       <div className="tc-head">
-        <span className="tc-name">
+        <span className="tc-name" title={tooltipTributo}>
           <span className={`tc-dot ${cfg.dotClass}`} />
           {cfg.label}
           <span className={`tc-badge ${badgeClass}`}>{badgeLabel}</span>
@@ -95,7 +106,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
       {/* Header colunas */}
       <div className={`tc-col-header ${cfg.layout}`}>
         {cfg.colunas.map(col => (
-          <span key={col} className="col-label">{col}</span>
+          <span key={col} className="col-label" title={tooltipColuna(col)}>{col}</span>
         ))}
       </div>
 
@@ -109,7 +120,10 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
               <div key={op.key} className="tc-row layout-ibs">
                 <span className="tc-row-label">
                   {op.label}
-                  <span className={`op-badge ${op.tipo === 'debito' ? 'op-d' : 'op-c'}`}>
+                  <span
+                    className={`op-badge ${op.tipo === 'debito' ? 'op-d' : 'op-c'}`}
+                    title={op.tipo === 'debito' ? TOOLTIPS_CONCEITO.badgeDebito : TOOLTIPS_CONCEITO.badgeCredito}
+                  >
                     {op.tipo === 'debito' ? 'D' : 'C'}
                   </span>
                 </span>
@@ -123,7 +137,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   key={`ibs-e-${op.key}-${ano}`}
                   className="field-inp aliq"
                   placeholder="Est.%"
-                  title="Pré-preenchido conforme LC 214/2025 · editável"
+                  title={TOOLTIPS_CONCEITO.aliqEditavel}
                   value={d.aliqIbsE}
                   onChange={valor => onAliquotaChange(op.key, 'aliqIbsE', valor)}
                 />
@@ -131,7 +145,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                   key={`ibs-m-${op.key}-${ano}`}
                   className="field-inp aliq"
                   placeholder="Mun.%"
-                  title="Pré-preenchido conforme LC 214/2025 · editável"
+                  title={TOOLTIPS_CONCEITO.aliqEditavel}
                   value={d.aliqIbsM}
                   onChange={valor => onAliquotaChange(op.key, 'aliqIbsM', valor)}
                 />
@@ -172,7 +186,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
                 key={`${tributo}-${op.key}-${ano}`}
                 className="field-inp aliq"
                 placeholder="%"
-                title="Pré-preenchido conforme LC 214/2025 · editável"
+                title={TOOLTIPS_CONCEITO.aliqEditavel}
                 value={d[campos.aliq] as number}
                 onChange={valor => onAliquotaChange(op.key, campos.aliq, valor)}
               />

@@ -1,9 +1,9 @@
 import type { ApuracaoAno, DadosOperacao, Estado, Operacao } from '@/types/simulador'
 
 export const OPERACOES: Operacao[] = [
-  { key: 'rec_locacao',         label: 'Rec. Locação',        tipo: 'debito'  },
-  { key: 'receita_financeira',  label: 'Receita Financeira',  tipo: 'debito'  },
-  { key: 'venda_ativo',         label: 'Venda Ativo',          tipo: 'debito'  },
+  { key: 'rec_locacao',         label: 'Rec. Locação',        tipo: 'debito',  categoria: 'padrao'    },
+  { key: 'receita_financeira',  label: 'Receita Financeira',  tipo: 'debito',  categoria: 'fora_base' },
+  { key: 'venda_ativo',         label: 'Venda Ativo',          tipo: 'debito',  categoria: 'padrao'    },
   { key: 'cred_serv',           label: 'Serv. Tomados',        tipo: 'credito' },
   { key: 'compra_ativo',        label: 'Compra Ativo',         tipo: 'credito' },
   { key: 'cred_deprec',         label: 'Deprec. Fiscal',       tipo: 'credito' },
@@ -20,13 +20,13 @@ type AliquotaOp = {
   aliqCbs:  number
   aliqIbsE: number
   aliqIbsM: number
-  pRedIbs?: number  // redução de base IBS — somente venda_ativo 2029–2032
 }
 
 export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   2026: {
     rec_locacao:        { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
-    receita_financeira: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
+    // TODO tributarista: PIS/COFINS sobre receita financeira em 2026 — Decreto 8.426/2015 prevê 0.65/4.00 (não-cumulativo)
+    receita_financeira: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0,    aliqIbsE: 0,    aliqIbsM: 0    },
     venda_ativo:  { aliqPis: 0,    aliqCof: 0,    aliqCbs: 0,    aliqIbsE: 0.10, aliqIbsM: 0    },
     cred_serv:    { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
     compra_ativo: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
@@ -35,7 +35,7 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2027: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
@@ -44,7 +44,7 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2028: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
@@ -53,8 +53,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2029: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 1.60, aliqIbsM: 0.25, pRedIbs: 90 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
+    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 1.60, aliqIbsM: 0.25 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
@@ -62,8 +62,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2030: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50, pRedIbs: 80 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
+    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
@@ -71,8 +71,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2031: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75, pRedIbs: 70 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
+    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
@@ -80,8 +80,8 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2032: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00, pRedIbs: 60 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
+    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
@@ -89,7 +89,7 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   },
   2033: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
-    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
+    receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,     aliqIbsM: 0    },
     venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
@@ -103,6 +103,7 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
 export function dadosIniciais(): DadosOperacao {
   return {
     valor: 0,
+    reducaoBase: 0,
     basePis: 0, aliqPis: 0, valPis: 0,
     baseCof: 0, aliqCof: 0, valCof: 0,
     baseCbs: 0, aliqCbs: 0, valCbs: 0,
@@ -134,20 +135,21 @@ export function estadoInicial(): Estado {
 
 /**
  * Recalcula uma operação a partir dos campos do estado.
- * @param pRedIbs  Percentual de redução de base IBS (somente venda_ativo 2029–2032).
- *                 Quando fornecido, baseIbs = valor × (1 - pRedIbs/100).
+ * Para receitas tipo débito, aplica a redução de base (em venda_ativo
+ * equivale ao VLA — LC 214/2025 arts. 108/109 + 407): a parcela ≤ redução
+ * tem alíquota zero CBS/IBS; só o excedente é tributado.
  */
-export function calcularOp(d: DadosOperacao, ano?: number, pRedIbs?: number): DadosOperacao {
+export function calcularOp(d: DadosOperacao, ano?: number, aplicarReducao?: boolean): DadosOperacao {
   const valPis = d.basePis * (d.aliqPis / 100)
   const valCof = d.baseCof * (d.aliqCof / 100)
 
   let baseCbs: number
   let baseIbs: number
 
-  if (pRedIbs !== undefined) {
-    // Venda Ativo 2029–2032: CBS usa base cheia; IBS usa base reduzida
-    baseCbs = d.baseCbs
-    baseIbs = d.valor * (1 - pRedIbs / 100)
+  if (aplicarReducao && d.reducaoBase > 0) {
+    const valorTributavel = Math.max(0, d.valor - d.reducaoBase)
+    baseCbs = valorTributavel
+    baseIbs = valorTributavel
   } else if (ano === 2026) {
     // 2026: base CBS/IBS = valor − PIS − COFINS
     baseCbs = Math.max(0, d.valor - valPis - valCof)
@@ -216,16 +218,17 @@ export function apurarAno(estado: Estado, ano: number): ApuracaoAno {
   const zero = () => ({ debito: 0, credito: 0, saldo: 0 })
 
   const result: ApuracaoAno = {
-    pis: zero(),
-    cofins: zero(),
-    cbs: zero(),
-    ibs: zero(),
-    ibsE: zero(),
-    ibsM: zero(),
-    receita: 0,
+    pis: zero(), cofins: zero(), cbs: zero(), ibs: zero(), ibsE: zero(), ibsM: zero(),
+    receitaPadrao: 0,
+    receitaRegimeEspecifico: 0,
+    receitaForaBase: 0,
+    receitaTributavel: 0,
+    receitaTotal: 0,
     totalAPagar: 0,
-    saldoCreedor: 0,
-    cargaEfetiva: 0,
+    saldoCredor: 0,
+    cargaPadrao: 0,
+    cargaConsolidada: 0,
+    cargaSobreReceitaTotal: 0,
     cargaBruta: 0,
   }
 
@@ -233,7 +236,13 @@ export function apurarAno(estado: Estado, ano: number): ApuracaoAno {
     const d = estado[ano][op.key]
     const isDebito = op.tipo === 'debito'
 
-    if (isDebito) result.receita += d.valor
+    if (isDebito) {
+      const cat = op.categoria ?? 'padrao'
+      result.receitaTotal += d.valor
+      if (cat === 'padrao')            result.receitaPadrao += d.valor
+      if (cat === 'regime_especifico') result.receitaRegimeEspecifico += d.valor
+      if (cat === 'fora_base')         result.receitaForaBase += d.valor
+    }
 
     const accumulate = (tributo: keyof Pick<ApuracaoAno, 'pis' | 'cofins' | 'cbs' | 'ibsE' | 'ibsM'>, val: number) => {
       if (isDebito) result[tributo].debito += val
@@ -247,26 +256,42 @@ export function apurarAno(estado: Estado, ano: number): ApuracaoAno {
     accumulate('ibsM', d.valIbsM)
   })
 
-  // Calcular saldos por tributo
+  result.receitaTributavel = result.receitaPadrao + result.receitaRegimeEspecifico
+
+  // Saldos por tributo (E e M mantidos para drill-down/auditoria)
   ;(['pis', 'cofins', 'cbs', 'ibsE', 'ibsM'] as const).forEach(t => {
     result[t].saldo = result[t].debito - result[t].credito
   })
 
-  // IBS consolidado = E + M
-  result.ibs.debito = result.ibsE.debito + result.ibsM.debito
+  // IBS é apurado pelo contribuinte como saldo ÚNICO (CG-IBS faz partilha E/M depois — LC 214/2025 arts. 39, 40)
+  result.ibs.debito  = result.ibsE.debito  + result.ibsM.debito
   result.ibs.credito = result.ibsE.credito + result.ibsM.credito
-  result.ibs.saldo = result.ibsE.saldo + result.ibsM.saldo
+  result.ibs.saldo   = result.ibs.debito   - result.ibs.credito
 
-  // Totais
-  const todosOsSaldos = [result.pis, result.cofins, result.cbs, result.ibsE, result.ibsM]
-  result.totalAPagar = todosOsSaldos.reduce((acc, t) => acc + Math.max(0, t.saldo), 0)
-  result.saldoCreedor = todosOsSaldos.reduce((acc, t) => acc + Math.abs(Math.min(0, t.saldo)), 0)
+  // Total a pagar: 4 saldos (PIS, COFINS, CBS, IBS unificado) — não 5
+  result.totalAPagar =
+    Math.max(0, result.pis.saldo) +
+    Math.max(0, result.cofins.saldo) +
+    Math.max(0, result.cbs.saldo) +
+    Math.max(0, result.ibs.saldo)
 
-  // Cargas
-  if (result.receita > 0) {
-    result.cargaEfetiva = (result.totalAPagar / result.receita) * 100
-    const totalDebitoTrib = result.pis.debito + result.cofins.debito + result.cbs.debito + result.ibsE.debito + result.ibsM.debito
-    result.cargaBruta = (totalDebitoTrib / result.receita) * 100
+  result.saldoCredor =
+    Math.abs(Math.min(0, result.pis.saldo)) +
+    Math.abs(Math.min(0, result.cofins.saldo)) +
+    Math.abs(Math.min(0, result.cbs.saldo)) +
+    Math.abs(Math.min(0, result.ibs.saldo))
+
+  // Três métricas de carga
+  if (result.receitaPadrao > 0) {
+    result.cargaPadrao = (result.totalAPagar / result.receitaPadrao) * 100
+  }
+  if (result.receitaTributavel > 0) {
+    result.cargaConsolidada = (result.totalAPagar / result.receitaTributavel) * 100
+    const totalDebito = result.pis.debito + result.cofins.debito + result.cbs.debito + result.ibs.debito
+    result.cargaBruta = (totalDebito / result.receitaTributavel) * 100
+  }
+  if (result.receitaTotal > 0) {
+    result.cargaSobreReceitaTotal = (result.totalAPagar / result.receitaTotal) * 100
   }
 
   return result
@@ -281,14 +306,17 @@ export function hasData(estado: Estado, ano: number): boolean {
 
 // ─── Mutações ────────────────────────────────────────────────────────────────
 
-/** Atualiza o valor de uma operação e recalcula, aplicando pRedIbs quando necessário. */
+function aplicarReducaoPara(key: string): boolean {
+  return OPERACOES.find(o => o.key === key)?.tipo === 'debito'
+}
+
+/** Atualiza o valor de uma operação e recalcula, aplicando redução de base quando a operação é de débito. */
 export function atualizarValor(
   estado: Estado,
   ano: number,
   key: string,
   valor: number
 ): Estado {
-  const aliq = ALIQUOTAS_POR_ANO[ano]?.[key]
   const d = calcularOp({
     ...estado[ano][key],
     valor,
@@ -296,7 +324,24 @@ export function atualizarValor(
     baseCof: valor,
     baseCbs: valor,
     baseIbs: valor,
-  }, ano, aliq?.pRedIbs)
+  }, ano, aplicarReducaoPara(key))
+  return {
+    ...estado,
+    [ano]: { ...estado[ano], [key]: d },
+  }
+}
+
+/** Atualiza a redução de base de uma receita (tipo débito) e recalcula. Valores negativos são clampeados em 0. */
+export function atualizarReducaoBase(
+  estado: Estado,
+  ano: number,
+  key: string,
+  valor: number
+): Estado {
+  const d = calcularOp({
+    ...estado[ano][key],
+    reducaoBase: Math.max(0, valor),
+  }, ano, aplicarReducaoPara(key))
   return {
     ...estado,
     [ano]: { ...estado[ano], [key]: d },
@@ -311,8 +356,7 @@ export function atualizarAliquota(
   field: keyof DadosOperacao,
   valor: number
 ): Estado {
-  const aliq = ALIQUOTAS_POR_ANO[ano]?.[key]
-  const atualizado = calcularOp({ ...estado[ano][key], [field]: valor }, ano, aliq?.pRedIbs)
+  const atualizado = calcularOp({ ...estado[ano][key], [field]: valor }, ano, aplicarReducaoPara(key))
   return {
     ...estado,
     [ano]: { ...estado[ano], [key]: atualizado },
@@ -337,7 +381,7 @@ export function aplicarAliquotasDoAno(estado: Estado, ano: number): Estado {
       baseCof: d.valor,
       baseCbs: d.valor,
       baseIbs: d.valor,
-    }, ano, aliq.pRedIbs)
+    }, ano, op.tipo === 'debito')
   })
   return { ...estado, [ano]: novoAno }
 }
@@ -348,11 +392,9 @@ export function aplicarAliquotasGlobais(
   ano: number,
   aliquotasAplicar: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>
 ): Estado {
-  const aliqAno = ALIQUOTAS_POR_ANO[ano]
   const novoAno = { ...estado[ano] }
   OPERACOES.forEach(op => {
     const d = estado[ano][op.key]
-    const aliq = aliqAno[op.key]
     const novosDados = {
       ...d,
       aliqPis:  'aliqPis' in aliquotasAplicar ? aliquotasAplicar.aliqPis! : d.aliqPis,
@@ -361,7 +403,7 @@ export function aplicarAliquotasGlobais(
       aliqIbsE: 'aliqIbsE' in aliquotasAplicar ? aliquotasAplicar.aliqIbsE! : d.aliqIbsE,
       aliqIbsM: 'aliqIbsM' in aliquotasAplicar ? aliquotasAplicar.aliqIbsM! : d.aliqIbsM,
     }
-    novoAno[op.key] = calcularOp(novosDados, ano, aliq.pRedIbs)
+    novoAno[op.key] = calcularOp(novosDados, ano, op.tipo === 'debito')
   })
   return { ...estado, [ano]: novoAno }
 }

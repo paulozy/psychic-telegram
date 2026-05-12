@@ -1,6 +1,7 @@
 import type { DadosOperacao } from '@/types/simulador'
 
-export const TEMPLATE_VERSION = 'arval-template-v1'
+export const TEMPLATE_VERSION = 'arval-template-v2'
+export const TEMPLATE_VERSION_V1 = 'arval-template-v1'
 
 export const SHEET_LEIAME = 'Leia-me'
 
@@ -25,6 +26,7 @@ export const HEADERS = [
   'Base CBS', 'Alíq. CBS (%)', 'Valor CBS',
   'Base IBS', 'Alíq. IBS Est. (%)', 'Alíq. IBS Mun. (%)',
   'Valor IBS Est.', 'Valor IBS Mun.', 'Total Tributos',
+  'VLA',
 ] as const
 
 export const COL_ANO = 1
@@ -35,6 +37,7 @@ export const COL_ALIQ_COF = 8
 export const COL_ALIQ_CBS = 11
 export const COL_ALIQ_IBS_E = 14
 export const COL_ALIQ_IBS_M = 15
+export const COL_VLA = 19
 
 export const COLS_EDITAVEIS: ReadonlyArray<number> = [
   COL_VALOR, COL_ALIQ_PIS, COL_ALIQ_COF, COL_ALIQ_CBS, COL_ALIQ_IBS_E, COL_ALIQ_IBS_M,

@@ -13,9 +13,10 @@ export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) 
   return (
     <div className="resultado-bar" data-tour="resultado-bar">
       {ANOS.map((ano, idx) => {
-        const res = resultadoAno(estado, ano)
+        // Convenção: positivo = crédito a tomar, negativo = a pagar.
+        const res = -resultadoAno(estado, ano)
         const anoAnterior = idx > 0 ? ANOS[idx - 1] : null
-        const resAnterior = anoAnterior ? resultadoAno(estado, anoAnterior) : null
+        const resAnterior = anoAnterior ? -resultadoAno(estado, anoAnterior) : null
 
         let pctStr = ''
         let pctClass = ''
@@ -25,8 +26,6 @@ export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) 
           pctClass = pct > 0 ? 'up' : 'down'
         }
 
-        const valClass = res > 0 ? 'pos' : res < 0 ? 'neg' : 'zero'
-
         return (
           <div
             key={ano}
@@ -34,7 +33,7 @@ export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) 
             onClick={() => onSetAno(ano)}
           >
             <span className="res-year">{ano}</span>
-            <span className={`res-val ${valClass}`}>{res ? fmtCompacto(res) : '—'}</span>
+            <span className="res-val">{res ? fmtCompacto(res) : '—'}</span>
             <span className={`res-pct ${pctClass}`}>{pctStr || '\u00a0'}</span>
           </div>
         )

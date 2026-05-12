@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { ANOS, apurarAno, fmtCompacto, fmtBR } from '@/lib/simulador'
+import { ANOS, apurarAno, fmtBR } from '@/lib/simulador'
+import { TOOLTIPS_CONCEITO, TOOLTIPS_METRICA } from '@/lib/tooltips'
 import type { Estado } from '@/types/simulador'
+import { useState } from 'react'
 
 interface ResumoTabelaProps {
   estado: Estado
@@ -31,14 +32,14 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
       anterior !== null && anterior.totalAPagar > 0 && a.totalAPagar > 0
         ? ((a.totalAPagar - anterior.totalAPagar) / anterior.totalAPagar) * 100
         : null
-    const deltaCarga = ano === 2026 ? null : a.cargaEfetiva - apurarAno(estado, 2026).cargaEfetiva
+    const deltaCarga = anterior !== null ? a.cargaConsolidada - anterior.cargaConsolidada : null
     return { ano, ...a, deltaTotal, deltaCarga }
   })
 
-  const algumDado = dados.some(d => d.receita > 0 || d.totalAPagar > 0)
+  const algumDado = dados.some(d => d.receitaTotal > 0 || d.totalAPagar > 0)
   if (!algumDado) return null
 
-  const maxCarga = Math.max(...dados.map(d => d.cargaEfetiva), 0.01)
+  const maxCarga = Math.max(...dados.map(d => d.cargaConsolidada), 0.01)
 
   function fmtPct(v: number) {
     return v.toFixed(2).replace('.', ',') + '%'
@@ -52,6 +53,12 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
   function fmtDeltaCarga(v: number) {
     const s = v > 0 ? '+' : ''
     return s + v.toFixed(2).replace('.', ',') + ' pp'
+  }
+
+  function fmtSigned(v: number): string {
+    const abs = Math.abs(v)
+    const prefix = v > 0 ? '+R$ ' : v < 0 ? '-R$ ' : 'R$ '
+    return prefix + fmtBR(abs)
   }
 
   function handleAnoClick(ano: number) {
@@ -68,8 +75,8 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
           <thead>
             <tr>
               <th className="rt-th rt-th-label" />
-              {dados.map(({ ano, cargaEfetiva }) => {
-                const barPct = maxCarga > 0 ? (cargaEfetiva / maxCarga) * 100 : 0
+              {dados.map(({ ano, cargaConsolidada }) => {
+                const barPct = maxCarga > 0 ? (cargaConsolidada / maxCarga) * 100 : 0
                 const isAtivo = ano === anoAtivo
                 const isExp = expandido === ano
                 return (
@@ -83,7 +90,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                       <div className="rt-bar-track">
                         <div
                           className={`rt-bar-fill ${isAtivo ? 'rt-bar-active' : ''}`}
-                          style={{ width: cargaEfetiva > 0 ? `${barPct}%` : '0%' }}
+                          style={{ width: cargaConsolidada > 0 ? `${barPct}%` : '0%' }}
                         />
                       </div>
                     </div>
@@ -94,15 +101,15 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
           </thead>
           <tbody>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Receita bruta</td>
-              {dados.map(({ ano, receita }) => (
+              <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.receitaBruta}>Receita bruta</td>
+              {dados.map(({ ano, receitaTotal }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
-                  {receita > 0 ? 'R$ ' + fmtBR(receita) : '—'}
+                  {receitaTotal > 0 ? 'R$ ' + fmtBR(receitaTotal) : '—'}
                 </td>
               ))}
             </tr>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Tributos s/ débitos</td>
+              <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.tributosDebitos}>Tributos s/ débitos</td>
               {dados.map(({ ano, pis, cofins, cbs, ibsE, ibsM }) => {
                 const totalDebitos = pis.debito + cofins.debito + cbs.debito + ibsE.debito + ibsM.debito
                 return (
@@ -113,7 +120,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               })}
             </tr>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Créditos compensáveis</td>
+              <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.creditosCompensaveis}>Créditos compensáveis</td>
               {dados.map(({ ano, pis, cofins, cbs, ibsE, ibsM }) => {
                 const totalCreditos = pis.credito + cofins.credito + cbs.credito + ibsE.credito + ibsM.credito
                 return (
@@ -124,23 +131,38 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               })}
             </tr>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Total a recolher</td>
-              {dados.map(({ ano, totalAPagar }) => (
-                <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
-                  {totalAPagar > 0 ? 'R$ ' + fmtBR(totalAPagar) : '—'}
-                </td>
-              ))}
+              <td
+                className="rt-td rt-td-label"
+                title={TOOLTIPS_METRICA.resultadoLiquido}
+              >
+                Resultado líquido
+              </td>
+              {dados.map(({ ano, pis, cofins, cbs, ibs }) => {
+                const totalDebitos = pis.debito + cofins.debito + cbs.debito + ibs.debito
+                const totalCreditos = pis.credito + cofins.credito + cbs.credito + ibs.credito
+                const liquido = totalCreditos - totalDebitos
+                return (
+                  <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
+                    {liquido !== 0 ? fmtSigned(liquido) : '—'}
+                  </td>
+                )
+              })}
             </tr>
             <tr className="rt-row">
-              <td className="rt-td rt-td-label">Carga efetiva</td>
-              {dados.map(({ ano, cargaEfetiva }) => (
+              <td
+                className="rt-td rt-td-label"
+                title={TOOLTIPS_METRICA.cargaEfetiva}
+              >
+                Carga efetiva
+              </td>
+              {dados.map(({ ano, cargaConsolidada }) => (
                 <td key={ano} className={`rt-td rt-td-num marg ${ano === anoAtivo ? 'active' : ''}`}>
-                  {cargaEfetiva > 0 ? fmtPct(cargaEfetiva) : '—'}
+                  {cargaConsolidada > 0 ? fmtPct(cargaConsolidada) : '—'}
                 </td>
               ))}
             </tr>
             <tr className="rt-row rt-row-delta">
-              <td className="rt-td rt-td-label">Δ Carga vs 2026</td>
+              <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.deltaCarga}>Δ Carga vs ano anterior</td>
               {dados.map(({ ano, deltaCarga }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                   {deltaCarga === null ? <span className="rt-base-tag">base</span> : (
@@ -152,7 +174,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               ))}
             </tr>
             <tr className="rt-row rt-row-delta">
-              <td className="rt-td rt-td-label">Δ Tributos</td>
+              <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.deltaTributos}>Δ Tributos</td>
               {dados.map(({ ano, deltaTotal }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                   {deltaTotal === null ? '—' : (
@@ -188,11 +210,11 @@ function BreakdownAno({
   const a = apurarAno(estado, ano)
 
   const tributos = [
-    { label: 'PIS',           data: a.pis,    cor: 'dot-pis',    so2026: true },
-    { label: 'COFINS',        data: a.cofins, cor: 'dot-cofins', so2026: true },
-    { label: 'CBS',           data: a.cbs,    cor: 'dot-cbs',    so2026: false },
-    { label: 'IBS Estadual',  data: a.ibsE,   cor: 'dot-ibs',    so2026: false },
-    { label: 'IBS Municipal', data: a.ibsM,   cor: 'dot-ibs',    so2026: false },
+    { label: 'PIS', data: a.pis, cor: 'dot-pis', so2026: true },
+    { label: 'COFINS', data: a.cofins, cor: 'dot-cofins', so2026: true },
+    { label: 'CBS', data: a.cbs, cor: 'dot-cbs', so2026: false },
+    { label: 'IBS Estadual', data: a.ibsE, cor: 'dot-ibs', so2026: false },
+    { label: 'IBS Municipal', data: a.ibsM, cor: 'dot-ibs', so2026: false },
   ].filter(t => !(t.so2026 && ano !== 2026))
 
   return (
@@ -204,10 +226,10 @@ function BreakdownAno({
 
       <div className="rt-bd-apuracao-table">
         <div className="rt-bd-apuracao-header">
-          <span className="rt-bd-apuracao-col rt-bd-apuracao-tributo">Tributo</span>
-          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Débito</span>
-          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Crédito</span>
-          <span className="rt-bd-apuracao-col rt-bd-apuracao-num">Saldo</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-tributo" title={TOOLTIPS_CONCEITO.colunaTributo}>Tributo</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num" title={TOOLTIPS_CONCEITO.colunaDebito}>Débito</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num" title={TOOLTIPS_CONCEITO.colunaCredito}>Crédito</span>
+          <span className="rt-bd-apuracao-col rt-bd-apuracao-num" title={TOOLTIPS_CONCEITO.colunaSaldo}>Saldo</span>
         </div>
 
         {tributos.map(t => (
@@ -244,12 +266,40 @@ function BreakdownAno({
 
       <div className="rt-bd-footer">
         <div className="rt-bd-footer-row">
-          <span className="rt-bd-footer-label">Carga bruta s/ receita</span>
+          <span
+            className="rt-bd-footer-label"
+            title={TOOLTIPS_METRICA.cargaBruta}
+          >
+            Carga bruta
+          </span>
           <span className="rt-bd-footer-val">{a.cargaBruta.toFixed(2).replace('.', ',')}%</span>
         </div>
         <div className="rt-bd-footer-row">
-          <span className="rt-bd-footer-label">Carga efetiva (c/ créditos)</span>
-          <span className="rt-bd-footer-val">{a.cargaEfetiva.toFixed(2).replace('.', ',')}%</span>
+          <span
+            className="rt-bd-footer-label"
+            title={TOOLTIPS_METRICA.cargaPadrao}
+          >
+            Carga padrão (atividade-fim)
+          </span>
+          <span className="rt-bd-footer-val">{a.cargaPadrao.toFixed(2).replace('.', ',')}%</span>
+        </div>
+        <div className="rt-bd-footer-row">
+          <span
+            className="rt-bd-footer-label"
+            title={TOOLTIPS_METRICA.cargaConsolidada}
+          >
+            Carga consolidada (tributável)
+          </span>
+          <span className="rt-bd-footer-val">{a.cargaConsolidada.toFixed(2).replace('.', ',')}%</span>
+        </div>
+        <div className="rt-bd-footer-row">
+          <span
+            className="rt-bd-footer-label"
+            title={TOOLTIPS_METRICA.cargaSobreTotal}
+          >
+            Carga sobre receita total
+          </span>
+          <span className="rt-bd-footer-val">{a.cargaSobreReceitaTotal.toFixed(2).replace('.', ',')}%</span>
         </div>
       </div>
     </div>

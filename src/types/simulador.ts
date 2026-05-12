@@ -1,13 +1,18 @@
 export type TipoOperacao = 'debito' | 'credito'
 
+export type CategoriaReceita = 'padrao' | 'regime_especifico' | 'fora_base'
+
 export interface Operacao {
   key: string
   label: string
   tipo: TipoOperacao
+  categoria?: CategoriaReceita
 }
 
 export interface DadosOperacao {
   valor: number
+  /** Redução de base aplicada antes do cálculo de CBS/IBS. Em venda_ativo equivale ao VLA (LC 214/2025 arts. 108/109 + 407). */
+  reducaoBase: number
   basePis: number
   aliqPis: number
   valPis: number
@@ -40,9 +45,18 @@ export interface ApuracaoAno {
   ibs: ApuracaoTributo
   ibsE: ApuracaoTributo
   ibsM: ApuracaoTributo
-  receita: number
+
+  receitaPadrao: number
+  receitaRegimeEspecifico: number
+  receitaForaBase: number
+  receitaTributavel: number
+  receitaTotal: number
+
   totalAPagar: number
-  saldoCreedor: number
-  cargaEfetiva: number
+  saldoCredor: number
+
+  cargaPadrao: number
+  cargaConsolidada: number
+  cargaSobreReceitaTotal: number
   cargaBruta: number
 }

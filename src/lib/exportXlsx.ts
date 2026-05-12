@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { Estado } from '@/types/simulador'
 import { ANOS, OPERACOES } from './simulador'
+import { HEADERS } from './excel/schema'
 import type { DadosOperacao } from '@/types/simulador'
 
 // ─── Colors ────────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ const FMT_PCT   = '0.00"%"'
 function zero(estado: Estado, ano: number, key: string): DadosOperacao {
   return estado[ano]?.[key] ?? {
     valor: 0,
+    reducaoBase: 0,
     basePis: 0, aliqPis: 0, valPis: 0,
     baseCof: 0, aliqCof: 0, valCof: 0,
     baseCbs: 0, aliqCbs: 0, valCbs: 0,
@@ -91,27 +93,19 @@ function addDetailSheet(
   // Column widths
   ws.getColumn(1).width = 8   // Ano
   ws.getColumn(2).width = 20  // Operação
-  for (let i = 3; i <= 18; i++) ws.getColumn(i).width = 16
+  for (let i = 3; i <= 19; i++) ws.getColumn(i).width = 16
 
   // Row 1 — title
   ws.getRow(1).height = 22
-  ws.mergeCells('A1:R1')
+  ws.mergeCells('A1:S1')
   const titleCell = ws.getCell('A1')
   titleCell.value = sheetName.toUpperCase()
   applyTitleStyle(titleCell)
 
-  // Row 2 — column headers
-  const hdrs = [
-    'Ano', 'Operação', 'Valor da Operação',
-    'Base PIS', 'Alíq. PIS (%)', 'Valor PIS',
-    'Base COFINS', 'Alíq. COFINS (%)', 'Valor COFINS',
-    'Base CBS', 'Alíq. CBS (%)', 'Valor CBS',
-    'Base IBS', 'Alíq. IBS Est. (%)', 'Alíq. IBS Mun. (%)',
-    'Valor IBS Est.', 'Valor IBS Mun.', 'Total Tributos',
-  ]
+  // Row 2 — column headers (importado de schema para evitar duplicação com o template)
   const hdrRow = ws.getRow(2)
   hdrRow.height = 30
-  hdrs.forEach((h, i) => {
+  HEADERS.forEach((h, i) => {
     const cell = hdrRow.getCell(i + 1)
     cell.value = h
     applyHeaderStyle(cell)
@@ -119,7 +113,8 @@ function addDetailSheet(
 
   // Data rows
   let rowNum = 3
-  const totals = new Array(18).fill(0)
+  const totals = new Array(19).fill(0)
+  const sheetTemVendaAtivo = opGroups.some(g => g.key === 'venda_ativo')
 
   for (const { key, label } of opGroups) {
     // Totals for this op group (for TOTAL row within group boundary, but plan says one TOTAL overall)
@@ -162,6 +157,18 @@ function addDetailSheet(
         totals[ci] += vals[ci] as number
       }
 
+      // Col 19 — VLA (índice 18 no array totals/vals).
+      // O header XLSX continua "VLA" (template v2); internamente usa o campo reducaoBase.
+      // Apenas venda_ativo emite valor; outras receitas usam redução só em UI nesta versão.
+      const vlaCell = row.getCell(19)
+      if (key === 'venda_ativo') {
+        setMoney(vlaCell, d.reducaoBase, ai)
+        totals[18] += d.reducaoBase
+      } else {
+        vlaCell.value = '—'
+        applyAltFill(vlaCell, ai)
+      }
+
       rowNum++
     }
   }
@@ -185,6 +192,16 @@ function addDetailSheet(
     }
     applyTotalStyle(cell)
   }
+
+  // Col 19 — total da VLA (só faz sentido em sheet com venda_ativo)
+  const vlaTotalCell = totalRow.getCell(19)
+  if (sheetTemVendaAtivo) {
+    vlaTotalCell.value = totals[18]
+    vlaTotalCell.numFmt = FMT_MONEY
+  } else {
+    vlaTotalCell.value = '—'
+  }
+  applyTotalStyle(vlaTotalCell)
 }
 
 // ─── Apuração Geral ─────────────────────────────────────────────────────────

@@ -84,6 +84,7 @@ function addLeiaMe(wb: ExcelJS.Workbook) {
     'As alíquotas vêm pré-preenchidas com os defaults da LC 214/2025; sobrescreva se necessário.',
     'A versão acima é validada na importação; não a altere.',
     'Sheets de operações: ' + SHEETS_DETALHE.map(s => s.nome).join(', ') + '.',
+    'Coluna VLA (Valor Líquido de Aquisição) na sheet "Ativo" aplica-se apenas a Venda Ativo — parcela ≤ VLA tem alíquota zero CBS/IBS (LC 214/2025 arts. 108/109 + 407).',
   ]
   instrucoes.forEach((txt, i) => {
     const r = ws.getRow(6 + i)
@@ -108,10 +109,10 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
 
   ws.getColumn(1).width = 8
   ws.getColumn(2).width = 20
-  for (let i = 3; i <= 18; i++) ws.getColumn(i).width = 16
+  for (let i = 3; i <= 19; i++) ws.getColumn(i).width = 16
 
   ws.getRow(1).height = 22
-  ws.mergeCells('A1:R1')
+  ws.mergeCells('A1:S1')
   const titleCell = ws.getCell('A1')
   titleCell.value = sheetNome.toUpperCase()
   applyTitle(titleCell)
@@ -170,6 +171,16 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
           fillLocked(cell)
         }
       }
+      // Col 19 — VLA (editável só em venda_ativo; locked em outras)
+      const vlaCell = row.getCell(19)
+      if (opKey === 'venda_ativo') {
+        vlaCell.value = 0
+        vlaCell.numFmt = FMT_MONEY
+        fillEditable(vlaCell)
+      } else {
+        vlaCell.value = '—'
+        fillLocked(vlaCell)
+      }
       rowNum++
     }
   }
@@ -181,10 +192,19 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
   applyTotalStyle(totalRow.getCell(1))
   totalRow.getCell(2).value = ''
   applyTotalStyle(totalRow.getCell(2))
-  for (let c = 3; c <= 18; c++) {
+  for (let c = 3; c <= 19; c++) {
     const cell = totalRow.getCell(c)
     if (isAliqCol(c)) {
       cell.value = ''
+    } else if (c === 19) {
+      // Total da coluna VLA — só faz sentido em sheets que têm venda_ativo
+      const sheetTemVendaAtivo = ops.includes('venda_ativo')
+      if (sheetTemVendaAtivo) {
+        cell.value = 0
+        cell.numFmt = FMT_MONEY
+      } else {
+        cell.value = '—'
+      }
     } else {
       cell.value = 0
       cell.numFmt = FMT_MONEY

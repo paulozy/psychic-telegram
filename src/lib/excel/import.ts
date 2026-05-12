@@ -5,6 +5,7 @@ import {
   OPERACOES,
   atualizarAliquota,
   atualizarValor,
+  atualizarReducaoBase,
   estadoInicial,
 } from '@/lib/simulador'
 import type { DadosOperacao, Estado } from '@/types/simulador'
@@ -17,6 +18,7 @@ import {
   SHEETS_DETALHE,
   SHEET_LEIAME,
   TEMPLATE_VERSION,
+  TEMPLATE_VERSION_V1,
   type SheetDetalhe,
 } from './schema'
 
@@ -103,6 +105,7 @@ interface RowParsed {
   ano: number
   opKey: string
   valor: number
+  reducaoBase?: number
   aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>
 }
 
@@ -212,21 +215,34 @@ function parseDetalheSheet(
     }
     if (aliqErro) continue
 
-    rows.push({ ano, opKey: op.key, valor, aliquotas })
+    // VLA é opcional (templates v1 não têm essa coluna; só venda_ativo usa)
+    let reducaoBase: number | undefined = undefined
+    const colVla = headerMap['VLA']
+    if (colVla !== undefined && op.key === 'venda_ativo') {
+      const vlaRaw = row.getCell(colVla).value
+      // Célula com "—" ou texto não numérico vira null em readNumber; aceitamos como ausente.
+      const vlaNum = readNumber(vlaRaw)
+      if (vlaNum !== null && vlaNum >= 0) {
+        reducaoBase = vlaNum
+      }
+    }
+
+    rows.push({ ano, opKey: op.key, valor, reducaoBase, aliquotas })
   }
 
   return rows
 }
 
-function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template' | 'export' | 'invalido' {
+function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'export' | 'invalido' {
   const leiaMe = wb.getWorksheet(SHEET_LEIAME)
   if (leiaMe) {
     const versao = readString(leiaMe.getCell('B2').value)
-    if (versao === TEMPLATE_VERSION) return 'template'
+    if (versao === TEMPLATE_VERSION) return 'template-v2'
+    if (versao === TEMPLATE_VERSION_V1) return 'template-v1'
     errors.push({
       sheet: SHEET_LEIAME,
       cell: 'B2',
-      reason: `Versão de template incompatível: "${versao || '(vazio)'}" — esperado "${TEMPLATE_VERSION}"`,
+      reason: `Versão de template incompatível: "${versao || '(vazio)'}" — esperado "${TEMPLATE_VERSION}" ou "${TEMPLATE_VERSION_V1}"`,
     })
     return 'invalido'
   }
@@ -247,7 +263,7 @@ function contarMudancas(antes: Estado, depois: Estado): number {
       const d = depois[ano]?.[op.key]
       if (!a || !d) continue
       const fields: ReadonlyArray<keyof DadosOperacao> = [
-        'valor',
+        'valor', 'reducaoBase',
         'aliqPis', 'aliqCof', 'aliqCbs', 'aliqIbsE', 'aliqIbsM',
       ]
       for (const f of fields) {
@@ -291,6 +307,9 @@ export async function importarXlsx(file: File, estadoAtual: Estado): Promise<Imp
   let novo = estadoInicial()
   for (const r of todasRows) {
     novo = atualizarValor(novo, r.ano, r.opKey, r.valor)
+    if (r.reducaoBase !== undefined && r.opKey === 'venda_ativo') {
+      novo = atualizarReducaoBase(novo, r.ano, r.opKey, r.reducaoBase)
+    }
     const tabela = ALIQUOTAS_POR_ANO[r.ano][r.opKey]
     const defaults = {
       aliqPis: tabela.aliqPis,
