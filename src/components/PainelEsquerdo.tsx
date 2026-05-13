@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
 import { NumberInputBR } from './NumberInputBR'
 import { PainelAliquotas } from './PainelAliquotas'
@@ -16,12 +17,14 @@ interface PainelEsquerdoProps {
 }
 
 function labelReducao(opKey: string): string {
-  return opKey === 'venda_ativo' ? 'VLA' : 'Redução'
+  return opKey.startsWith('venda_ativo') ? 'Custo de aquisição' : 'Redução'
 }
 
 function tooltipReducao(opKey: string): string {
-  return opKey === 'venda_ativo' ? TOOLTIPS_CONCEITO.vla : TOOLTIPS_CONCEITO.reducaoBase
+  return opKey.startsWith('venda_ativo') ? TOOLTIPS_CONCEITO.custoAquisicao : TOOLTIPS_CONCEITO.reducaoBase
 }
+
+type Tab = 'operacoes' | 'venda_ativo'
 
 export function PainelEsquerdo({
   estado,
@@ -31,13 +34,19 @@ export function PainelEsquerdo({
   onReducaoChange,
   onAliquotasGlobais,
 }: PainelEsquerdoProps) {
-  // totais do rodapé
+  const [tab, setTab] = useState<Tab>('operacoes')
+
+  // totais do rodapé (sempre considerando TODAS as operações, independente da tab visível)
   let totalDeb = 0, totalCred = 0
   OPERACOES.forEach(op => {
     const v = estado[anoAtivo][op.key].valor
     if (op.tipo === 'debito') totalDeb += v
     else totalCred += v
   })
+
+  const operacoesVisiveis = tab === 'operacoes'
+    ? OPERACOES.filter(op => !op.key.startsWith('venda_ativo_'))
+    : OPERACOES.filter(op => op.key.startsWith('venda_ativo_'))
 
   return (
     <aside className="left-panel">
@@ -66,9 +75,25 @@ export function PainelEsquerdo({
         onAplicarAliquotas={onAliquotasGlobais}
       />
 
+      {/* Tabs */}
+      <div className="rec-tabs" data-tour="rec-tabs">
+        <button
+          className={tab === 'operacoes' ? 'active' : ''}
+          onClick={() => setTab('operacoes')}
+        >
+          Operações
+        </button>
+        <button
+          className={tab === 'venda_ativo' ? 'active' : ''}
+          onClick={() => setTab('venda_ativo')}
+        >
+          Venda Ativo
+        </button>
+      </div>
+
       {/* Cards de receita */}
       <div className="receitas-scroll" data-tour="operacoes">
-        {OPERACOES.map(op => {
+        {operacoesVisiveis.map(op => {
           const d = estado[anoAtivo][op.key]
           return (
             <div

@@ -25,13 +25,13 @@ import type { Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
-  // v4: campo `vla` renomeado para `reducaoBase` e generalizado para todas as receitas.
-  // Bump da chave invalida estado persistido antigo (incompatível) e força re-init.
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v4', estadoBase)
+  // v5: 3ª rodada Arval — venda_ativo separado em pre2026 + pos2026 (schema incompatível com v4).
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v5', estadoBase)
 
   // Cleanup de chaves antigas (executa uma vez por sessão; idempotente).
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v4')
       localStorage.removeItem('arval-simulador-v3')
       localStorage.removeItem('arval-simulador-v2')
     }
@@ -80,7 +80,7 @@ export function Simulador() {
 
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v4')
+      localStorage.removeItem('arval-simulador-v5')
       localStorage.removeItem('arval-simulador-v2')  // limpa chave antiga também
     }
     setEstado(estadoInicial())
@@ -139,7 +139,7 @@ export function Simulador() {
 
   const handleLimparExemplo = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v4')
+      localStorage.removeItem('arval-simulador-v5')
       localStorage.removeItem('arval-simulador-v2')
     }
     setEstado(estadoInicial())

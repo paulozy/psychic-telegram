@@ -146,6 +146,34 @@ html, body {
 .rec-input:focus { border-bottom-color: var(--accent); color: var(--accent); }
 .rec-input::placeholder { color: var(--t3); font-weight: 400; }
 
+/* Tabs do painel esquerdo (Operações / Venda Ativo) */
+.rec-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.rec-tabs button {
+  flex: 1;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+  transition: color .12s, border-color .12s;
+}
+.rec-tabs button:hover {
+  color: var(--text);
+}
+.rec-tabs button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 /* Redução/VLA no card (somente receitas tipo débito) */
 .rec-reducao-row {
   display: flex; align-items: center; gap: 6px;
