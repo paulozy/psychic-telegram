@@ -14,16 +14,18 @@ export const TOOLTIPS_OPERACAO: Record<string, string> = {
     'Receita de locação de frota — atividade-fim. Regime padrão CBS/IBS após 2026; sem regime específico na LC 214/2025.',
   receita_financeira:
     'Juros, dividendos e ganhos de aplicações. Fora da base de CBS/IBS para empresa não-financeira (LC 214/2025 art. 181+).',
-  venda_ativo:
-    'Venda de imobilizado. Alíquota zero de CBS/IBS sobre a parcela ≤ VLA; tributa só o excedente (arts. 108/109 e 407).',
+  venda_ativo_pre2026:
+    'Venda de imobilizado adquirido até 2026. SEMPRE isenta de CBS/IBS, independente do ano da venda (regra de transição LC 214/2025).',
+  venda_ativo_pos2026:
+    'Venda de imobilizado adquirido a partir de 2027. 2030-2031: CBS sobre o ganho (valor − custo). 2032+: CBS + IBS sobre o ganho. Informe o custo de aquisição.',
   cred_serv:
     'Serviços de terceiros que geram crédito integral de CBS/IBS pela não-cumulatividade plena (LC 214/2025 art. 47).',
   compra_ativo:
     'Aquisição de bem de capital. Crédito integral e imediato de CBS/IBS no momento da compra (arts. 108/109).',
   cred_deprec:
-    'Depreciação fiscal. Crédito remanescente do regime PIS/COFINS; no CBS/IBS o crédito é tomado integralmente na aquisição.',
+    'Depreciação fiscal. Editável em 2026 (regime PIS/COFINS). A partir de 2027 não gera crédito — o crédito de bem de capital é tomado integralmente em Compra Ativo (arts. 108/109 LC 214/2025).',
   cred_juros:
-    'Juros pagos a instituição financeira. Crédito de CBS/IBS sob regime específico de serviços financeiros (LC 214/2025 art. 181+).',
+    'Juros pagos a instituição financeira. Alíquotas dependem do que o banco informar — campos editáveis no painel do tributo. Defaults baseados em projeções; sobrescreva conforme nota fiscal.',
 }
 
 /** Tooltips dos tributos (usados em PainelAliquotas, TributoCard). */
@@ -53,8 +55,9 @@ export const TOOLTIPS_METRICA = {
 
 /** Tooltips de conceitos auxiliares e elementos de UI. */
 export const TOOLTIPS_CONCEITO = {
-  vla:             'Valor Líquido de Aquisição. Custo de aquisição menos créditos já tomados. Base zerada de CBS na venda ≤ VLA (art. 407).',
-  reducaoBase:     'Parcela do valor da operação que não compõe a base de CBS/IBS. Para venda de ativo equivale ao VLA.',
+  vla:             'Alias deprecated — use custoAquisicao para venda_ativo.',
+  custoAquisicao:  'Custo de aquisição do bem. A partir de 2030, a venda tributa apenas o ganho (valor − custo) em CBS; 2032+ inclui IBS. Isento até 2029.',
+  reducaoBase:     'Parcela do valor da operação que não compõe a base de CBS/IBS.',
   baseEfetiva:     'Valor sobre o qual incide a alíquota: valor da operação menos redução/VLA, limitado a zero.',
   saldoCredor:     'Crédito acumulado quando os créditos do período superam os débitos. Aproveitado nos meses seguintes.',
   badgeDebito:     'Operação tipo débito — receita que gera tributo a pagar.',

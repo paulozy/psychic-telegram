@@ -1,13 +1,14 @@
 import type { ApuracaoAno, DadosOperacao, Estado, Operacao } from '@/types/simulador'
 
 export const OPERACOES: Operacao[] = [
-  { key: 'rec_locacao',         label: 'Rec. Locação',        tipo: 'debito',  categoria: 'padrao'    },
-  { key: 'receita_financeira',  label: 'Receita Financeira',  tipo: 'debito',  categoria: 'fora_base' },
-  { key: 'venda_ativo',         label: 'Venda Ativo',          tipo: 'debito',  categoria: 'padrao'    },
-  { key: 'cred_serv',           label: 'Serv. Tomados',        tipo: 'credito' },
-  { key: 'compra_ativo',        label: 'Compra Ativo',         tipo: 'credito' },
-  { key: 'cred_deprec',         label: 'Deprec. Fiscal',       tipo: 'credito' },
-  { key: 'cred_juros',          label: 'Juros s/ Empréstimo',  tipo: 'credito' },
+  { key: 'rec_locacao',          label: 'Rec. Locação',           tipo: 'debito',  categoria: 'padrao'    },
+  { key: 'receita_financeira',   label: 'Receita Financeira',     tipo: 'debito',  categoria: 'fora_base' },
+  { key: 'venda_ativo_pre2026',  label: 'Venda Ativo (pré-2026)', tipo: 'debito',  categoria: 'padrao'    },
+  { key: 'venda_ativo_pos2026',  label: 'Venda Ativo (pós-2026)', tipo: 'debito',  categoria: 'padrao'    },
+  { key: 'cred_serv',            label: 'Serv. Tomados',          tipo: 'credito' },
+  { key: 'compra_ativo',         label: 'Compra Ativo',           tipo: 'credito' },
+  { key: 'cred_deprec',          label: 'Deprec. Fiscal',         tipo: 'credito' },
+  { key: 'cred_juros',           label: 'Juros s/ Empréstimo',    tipo: 'credito' },
 ]
 
 export const ANOS = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033]
@@ -25,9 +26,12 @@ type AliquotaOp = {
 export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   2026: {
     rec_locacao:        { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
-    // TODO tributarista: PIS/COFINS sobre receita financeira em 2026 — Decreto 8.426/2015 prevê 0.65/4.00 (não-cumulativo)
-    receita_financeira: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0,    aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0,    aliqCof: 0,    aliqCbs: 0,    aliqIbsE: 0.10, aliqIbsM: 0    },
+    // 2ª rodada Arval (Q2): "alíquota reduzida + isento a partir de 2027".
+    // Decreto 8.426/2015: 0,65 PIS + 4,00 COFINS sobre receita financeira (regime não-cumulativo). Isento CBS/IBS.
+    receita_financeira: { aliqPis: 0.65, aliqCof: 4.00, aliqCbs: 0,    aliqIbsE: 0,    aliqIbsM: 0    },
+    // Q4 3ª rodada Arval: frota pré-2026 sempre isenta. Frota pós-2026 não existe em 2026.
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
     cred_serv:    { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
     compra_ativo: { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
     cred_deprec:  { aliqPis: 1.65, aliqCof: 7.60, aliqCbs: 0.90, aliqIbsE: 0.10, aliqIbsM: 0    },
@@ -36,64 +40,80 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
   2027: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    // Q4 3ª rodada: pré-2026 sempre isenta (regra de transição).
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // Premissa conservadora (pendente 4ª rodada): pós-2026 vendida em 2027-2029 usa alíquotas plenas do ano.
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40, aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    // 2ª rodada Arval (Q6): a partir de 2027 o crédito é integral na compra (arts. 108/109). Esta rubrica não gera crédito.
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 10.85, aliqIbsE: 0.05, aliqIbsM: 0.05 },
   },
   2028: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // Premissa conservadora (pendente 4ª rodada): pós-2026 vendida em 2027-2029.
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40, aliqIbsE: 0.05, aliqIbsM: 0.05 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.40,  aliqIbsE: 0.05, aliqIbsM: 0.05 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 10.85, aliqIbsE: 0.05, aliqIbsM: 0.05 },
   },
   2029: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 1.60, aliqIbsM: 0.25 },
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // Premissa conservadora (pendente 4ª rodada): pós-2026 vendida em 2029 — alíquotas plenas do ano.
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50, aliqIbsE: 1.60, aliqIbsM: 0.25 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 1.60, aliqIbsM: 0.25 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.00, aliqIbsE: 1.60, aliqIbsM: 0.25 },
   },
   2030: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
+    // Q4 3ª rodada: pré-2026 SEMPRE isenta, mesmo em 2030+.
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // 2ª rodada Arval (Q3/Q4): pós-2026 em 2030-2031 tributa apenas o GANHO (venda − custo) em CBS; IBS isento.
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50, aliqIbsE: 0, aliqIbsM: 0 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 3.20, aliqIbsM: 0.50 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.15, aliqIbsE: 3.20, aliqIbsM: 0.50 },
   },
   2031: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // 2ª rodada Arval (Q3/Q4): pós-2026 em 2031 ainda só CBS sobre o ganho; IBS isento.
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50, aliqIbsE: 0, aliqIbsM: 0 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 4.80, aliqIbsM: 0.75 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.30, aliqIbsE: 4.80, aliqIbsM: 0.75 },
   },
   2032: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    // 2ª rodada Arval (Q3/Q4): pós-2026 em 2032+ CBS + IBS sobre o ganho. Base = max(0, valor − custo).
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50, aliqIbsE: 6.40, aliqIbsM: 1.00 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 6.40, aliqIbsM: 1.00 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,    aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 11.50, aliqIbsE: 6.40, aliqIbsM: 1.00 },
   },
   2033: {
     rec_locacao:        { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     receita_financeira: { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,     aliqIbsM: 0    },
-    venda_ativo:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
+    venda_ativo_pre2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 0, aliqIbsE: 0, aliqIbsM: 0 },
+    venda_ativo_pos2026: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50, aliqIbsE: 16.00, aliqIbsM: 2.50 },
     cred_serv:    { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
     compra_ativo: { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
-    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 8.50,  aliqIbsE: 16.00, aliqIbsM: 2.50 },
+    cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,     aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 12.50, aliqIbsE: 16.00, aliqIbsM: 2.50 },
   },
 }
@@ -135,9 +155,11 @@ export function estadoInicial(): Estado {
 
 /**
  * Recalcula uma operação a partir dos campos do estado.
- * Para receitas tipo débito, aplica a redução de base (em venda_ativo
- * equivale ao VLA — LC 214/2025 arts. 108/109 + 407): a parcela ≤ redução
- * tem alíquota zero CBS/IBS; só o excedente é tributado.
+ * Para receitas tipo débito, aplica a redução de base — para venda_ativo
+ * representa o custo de aquisição (Q3/Q4 da 2ª rodada Arval): base = max(0, valor − custo).
+ *
+ * TODO Q9: quando o tributarista enviar os percentuais de redução de base
+ * por ano (2030-2033), aplicar como fator adicional sobre `valorTributavel`.
  */
 export function calcularOp(d: DadosOperacao, ano?: number, aplicarReducao?: boolean): DadosOperacao {
   const valPis = d.basePis * (d.aliqPis / 100)
