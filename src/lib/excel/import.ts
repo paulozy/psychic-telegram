@@ -7,7 +7,7 @@ import {
   atualizarValor,
   atualizarReducaoBase,
   estadoInicial,
-} from '@/lib/simulador'
+} from '../simulador.ts'
 import type { DadosOperacao, Estado } from '@/types/simulador'
 import {
   ALIQUOTA_FIELDS,
@@ -19,8 +19,9 @@ import {
   SHEET_LEIAME,
   TEMPLATE_VERSION,
   TEMPLATE_VERSION_V1,
+  TEMPLATE_VERSION_V2,
   type SheetDetalhe,
-} from './schema'
+} from './schema.ts'
 
 export interface ImportError {
   sheet: string
@@ -160,7 +161,9 @@ function parseDetalheSheet(
     }
 
     const opLabel = readString(row.getCell(colOp).value)
-    const op = opsValidos.find(o => o.label === opLabel)
+    // Backward compat v1/v2: label "Venda Ativo" antigo mapeia para "Venda Ativo (pré-2026)" (premissa: frota antiga).
+    const labelNormalizado = opLabel === 'Venda Ativo' ? 'Venda Ativo (pré-2026)' : opLabel
+    const op = opsValidos.find(o => o.label === labelNormalizado)
     if (!op) {
       errors.push({
         sheet: sd.nome,
@@ -218,7 +221,7 @@ function parseDetalheSheet(
     // VLA é opcional (templates v1 não têm essa coluna; só venda_ativo usa)
     let reducaoBase: number | undefined = undefined
     const colVla = headerMap['VLA']
-    if (colVla !== undefined && op.key === 'venda_ativo') {
+    if (colVla !== undefined && op.key.startsWith('venda_ativo')) {
       const vlaRaw = row.getCell(colVla).value
       // Célula com "—" ou texto não numérico vira null em readNumber; aceitamos como ausente.
       const vlaNum = readNumber(vlaRaw)
@@ -233,16 +236,17 @@ function parseDetalheSheet(
   return rows
 }
 
-function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'export' | 'invalido' {
+function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'template-v3' | 'export' | 'invalido' {
   const leiaMe = wb.getWorksheet(SHEET_LEIAME)
   if (leiaMe) {
     const versao = readString(leiaMe.getCell('B2').value)
-    if (versao === TEMPLATE_VERSION) return 'template-v2'
+    if (versao === TEMPLATE_VERSION) return 'template-v3'
+    if (versao === TEMPLATE_VERSION_V2) return 'template-v2'
     if (versao === TEMPLATE_VERSION_V1) return 'template-v1'
     errors.push({
       sheet: SHEET_LEIAME,
       cell: 'B2',
-      reason: `Versão de template incompatível: "${versao || '(vazio)'}" — esperado "${TEMPLATE_VERSION}" ou "${TEMPLATE_VERSION_V1}"`,
+      reason: `Versão de template incompatível: "${versao || '(vazio)'}". Aceitos: ${TEMPLATE_VERSION}, ${TEMPLATE_VERSION_V2}, ${TEMPLATE_VERSION_V1}`,
     })
     return 'invalido'
   }
@@ -307,7 +311,7 @@ export async function importarXlsx(file: File, estadoAtual: Estado): Promise<Imp
   let novo = estadoInicial()
   for (const r of todasRows) {
     novo = atualizarValor(novo, r.ano, r.opKey, r.valor)
-    if (r.reducaoBase !== undefined && r.opKey === 'venda_ativo') {
+    if (r.reducaoBase !== undefined && r.opKey.startsWith('venda_ativo')) {
       novo = atualizarReducaoBase(novo, r.ano, r.opKey, r.reducaoBase)
     }
     const tabela = ALIQUOTAS_POR_ANO[r.ano][r.opKey]

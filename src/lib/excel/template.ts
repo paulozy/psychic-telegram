@@ -173,7 +173,7 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
       }
       // Col 19 — VLA (editável só em venda_ativo; locked em outras)
       const vlaCell = row.getCell(19)
-      if (opKey === 'venda_ativo') {
+      if (opKey.startsWith('venda_ativo')) {
         vlaCell.value = 0
         vlaCell.numFmt = FMT_MONEY
         fillEditable(vlaCell)
@@ -197,8 +197,8 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
     if (isAliqCol(c)) {
       cell.value = ''
     } else if (c === 19) {
-      // Total da coluna VLA — só faz sentido em sheets que têm venda_ativo
-      const sheetTemVendaAtivo = ops.includes('venda_ativo')
+      // Total da coluna VLA/Custo — só faz sentido em sheets que têm venda_ativo
+      const sheetTemVendaAtivo = ops.some(k => k.startsWith('venda_ativo'))
       if (sheetTemVendaAtivo) {
         cell.value = 0
         cell.numFmt = FMT_MONEY

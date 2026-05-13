@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { Estado } from '@/types/simulador'
-import { ANOS, OPERACOES } from './simulador'
-import { HEADERS } from './excel/schema'
+import { ANOS, OPERACOES } from './simulador.ts'
+import { HEADERS } from './excel/schema.ts'
 import type { DadosOperacao } from '@/types/simulador'
 
 // ─── Colors ────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ function addDetailSheet(
   // Data rows
   let rowNum = 3
   const totals = new Array(19).fill(0)
-  const sheetTemVendaAtivo = opGroups.some(g => g.key === 'venda_ativo')
+  const sheetTemVendaAtivo = opGroups.some(g => g.key.startsWith('venda_ativo'))
 
   for (const { key, label } of opGroups) {
     // Totals for this op group (for TOTAL row within group boundary, but plan says one TOTAL overall)
@@ -157,11 +157,10 @@ function addDetailSheet(
         totals[ci] += vals[ci] as number
       }
 
-      // Col 19 — VLA (índice 18 no array totals/vals).
-      // O header XLSX continua "VLA" (template v2); internamente usa o campo reducaoBase.
-      // Apenas venda_ativo emite valor; outras receitas usam redução só em UI nesta versão.
+      // Col 19 — VLA / Custo de aquisição (índice 18 no array totals/vals).
+      // Aplica a venda_ativo_pre2026 e venda_ativo_pos2026; outras ops mostram "—".
       const vlaCell = row.getCell(19)
-      if (key === 'venda_ativo') {
+      if (key.startsWith('venda_ativo')) {
         setMoney(vlaCell, d.reducaoBase, ai)
         totals[18] += d.reducaoBase
       } else {
@@ -255,15 +254,22 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
     const ano = ANOS[ai]
     const rl = zero(estado, ano, 'rec_locacao')
     const rf = zero(estado, ano, 'receita_financeira')
-    const va = zero(estado, ano, 'venda_ativo')
-    const totalDeb = rl.valor + rf.valor + va.valor
-    const cbsDeb   = rl.valCbs + rf.valCbs + va.valCbs
-    const ibsEDeb  = rl.valIbsE + rf.valIbsE + va.valIbsE
-    const ibsMDeb  = rl.valIbsM + rf.valIbsM + va.valIbsM
+    const vaPre = zero(estado, ano, 'venda_ativo_pre2026')
+    const vaPos = zero(estado, ano, 'venda_ativo_pos2026')
+    const vaValor = vaPre.valor + vaPos.valor
+    const vaCbs = vaPre.valCbs + vaPos.valCbs
+    const vaIbsE = vaPre.valIbsE + vaPos.valIbsE
+    const vaIbsM = vaPre.valIbsM + vaPos.valIbsM
+    const vaPis = vaPre.valPis + vaPos.valPis
+    const vaCof = vaPre.valCof + vaPos.valCof
+    const totalDeb = rl.valor + rf.valor + vaValor
+    const cbsDeb   = rl.valCbs + rf.valCbs + vaCbs
+    const ibsEDeb  = rl.valIbsE + rf.valIbsE + vaIbsE
+    const ibsMDeb  = rl.valIbsM + rf.valIbsM + vaIbsM
     const tribDeb  = cbsDeb + ibsEDeb + ibsMDeb +
-      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
+      rl.valPis + rl.valCof + rf.valPis + rf.valCof + vaPis + vaCof
 
-    const vals = [ano, rl.valor, rf.valor, va.valor, totalDeb, cbsDeb, ibsEDeb, ibsMDeb, tribDeb]
+    const vals = [ano, rl.valor, rf.valor, vaValor, totalDeb, cbsDeb, ibsEDeb, ibsMDeb, tribDeb]
     const row = ws.getRow(5 + ai)
     row.height = 18
     vals.forEach((v, ci) => {
@@ -388,11 +394,13 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
     // Débitos
     const rl = zero(estado, ano, 'rec_locacao')
     const rf = zero(estado, ano, 'receita_financeira')
-    const va = zero(estado, ano, 'venda_ativo')
-    const cbsDeb  = rl.valCbs + rf.valCbs + va.valCbs +
-      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
-    const ibsEDeb = rl.valIbsE + rf.valIbsE + va.valIbsE
-    const ibsMDeb = rl.valIbsM + rf.valIbsM + va.valIbsM
+    const vaPre = zero(estado, ano, 'venda_ativo_pre2026')
+    const vaPos = zero(estado, ano, 'venda_ativo_pos2026')
+    const cbsDeb  = rl.valCbs + rf.valCbs + vaPre.valCbs + vaPos.valCbs +
+      rl.valPis + rl.valCof + rf.valPis + rf.valCof +
+      vaPre.valPis + vaPre.valCof + vaPos.valPis + vaPos.valCof
+    const ibsEDeb = rl.valIbsE + rf.valIbsE + vaPre.valIbsE + vaPos.valIbsE
+    const ibsMDeb = rl.valIbsM + rf.valIbsM + vaPre.valIbsM + vaPos.valIbsM
 
     // Créditos
     const cs = zero(estado, ano, 'cred_serv')
@@ -440,7 +448,11 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-export async function exportarXlsx(estado: Estado): Promise<void> {
+/**
+ * Função pura: monta o Workbook completo a partir do estado, sem efeitos
+ * colaterais de browser (download, blob, etc.). Útil para testes node:test.
+ */
+export function buildWorkbook(estado: Estado): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Simulador Arval'
   wb.created = new Date()
@@ -457,7 +469,8 @@ export async function exportarXlsx(estado: Estado): Promise<void> {
   ], estado)
 
   addDetailSheet(wb, 'Ativo', [
-    { key: 'venda_ativo',  label: OPERACOES.find(o => o.key === 'venda_ativo')!.label },
+    { key: 'venda_ativo_pre2026', label: OPERACOES.find(o => o.key === 'venda_ativo_pre2026')!.label },
+    { key: 'venda_ativo_pos2026', label: OPERACOES.find(o => o.key === 'venda_ativo_pos2026')!.label },
     { key: 'compra_ativo', label: OPERACOES.find(o => o.key === 'compra_ativo')!.label },
   ], estado)
 
@@ -473,6 +486,11 @@ export async function exportarXlsx(estado: Estado): Promise<void> {
     { key: 'cred_juros', label: OPERACOES.find(o => o.key === 'cred_juros')!.label },
   ], estado)
 
+  return wb
+}
+
+export async function exportarXlsx(estado: Estado): Promise<void> {
+  const wb = buildWorkbook(estado)
   const buffer = await wb.xlsx.writeBuffer()
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
