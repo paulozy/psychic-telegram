@@ -18,6 +18,11 @@ dist/
 .DS_Store
 *.log
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 .claude/
 CENARIO_Servicos_Reforma_Tributaria_ARVAL.xlsx
 aliquotas.md
