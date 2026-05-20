@@ -6,22 +6,13 @@ test.describe('Tooltips — atributos title presentes nos pontos-chave', () => {
   })
 
   test('rec-name das receitas tem title explicativo', async ({ page }) => {
-    // Tab "Operações" (default): Rec. Locação + Receita Financeira
-    for (const label of ['Rec. Locação', 'Receita Financeira']) {
-      const card = page.locator('.rec-card').filter({ hasText: label })
+    // Lista única (sem tabs): receitas + Venda Ativo unificado
+    for (const label of ['Rec. Locação', 'Receita Financeira', 'Venda Ativo']) {
+      const card = page.locator('.rec-card').filter({ hasText: label }).first()
       const span = card.locator('.rec-name').first()
       const title = await span.getAttribute('title')
       expect(title, `"${label}" sem tooltip`).toBeTruthy()
       expect(title!.length).toBeGreaterThan(20)
-    }
-
-    // Tab "Venda Ativo": pré-2026 + pós-2026
-    await page.locator('.rec-tabs button').filter({ hasText: 'Venda Ativo' }).click()
-    for (const label of ['Venda Ativo (pré-2026)', 'Venda Ativo (pós-2026)']) {
-      const card = page.locator('.rec-card').filter({ hasText: label })
-      const span = card.locator('.rec-name').first()
-      const title = await span.getAttribute('title')
-      expect(title, `"${label}" sem tooltip`).toBeTruthy()
     }
   })
 
@@ -60,17 +51,27 @@ test.describe('Tooltips — atributos title presentes nos pontos-chave', () => {
   })
 
   test('label de Custo/Redução tem tooltip dinâmico', async ({ page }) => {
-    // Rec. Locação (tab Operações default): label "Redução"
+    // Rec. Locação: label "Redução"
     const cardLoc = page.locator('.rec-card').filter({ hasText: 'Rec. Locação' })
-    const labelRed = cardLoc.locator('.rec-reducao-label')
+    const labelRed = cardLoc.locator('.rec-reducao-label').first()
     await expect(labelRed).toHaveText('Redução')
     expect(await labelRed.getAttribute('title')).toContain('CBS/IBS')
 
-    // Tab Venda Ativo: ambos cards usam "Custo de aquisição"
-    await page.locator('.rec-tabs button').filter({ hasText: 'Venda Ativo' }).click()
-    const cardPre = page.locator('.rec-card').filter({ hasText: 'Venda Ativo (pré-2026)' })
-    const labelCustoPre = cardPre.locator('.rec-reducao-label')
-    await expect(labelCustoPre).toHaveText('Custo de aquisição')
-    expect(await labelCustoPre.getAttribute('title')).toContain('ganho')
+    // Venda Ativo: label "Custo de aquisição"
+    const cardVA = page.locator('.rec-card').filter({ hasText: 'Venda Ativo' }).first()
+    const labelCusto = cardVA.locator('.rec-reducao-label').first()
+    await expect(labelCusto).toHaveText('Custo de aquisição')
+    expect(await labelCusto.getAttribute('title')).toContain('VLA')
+  })
+
+  test('Venda Ativo expõe dropdown de bucket de aquisição', async ({ page }) => {
+    const cardVA = page.locator('.rec-card').filter({ hasText: 'Venda Ativo' }).first()
+    const select = cardVA.locator('.rec-bucket-select')
+    await expect(select).toBeVisible()
+    // Default deve ser 2024-2026
+    await expect(select).toHaveValue('2024-2026')
+    // Deve ter 8 opções
+    const options = select.locator('option')
+    await expect(options).toHaveCount(8)
   })
 })

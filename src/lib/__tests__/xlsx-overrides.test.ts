@@ -4,6 +4,7 @@ import {
   OPERACOES,
   aplicarAliquotasGlobais,
   atualizarAliquota,
+  atualizarBucketAquisicao,
   atualizarReducaoBase,
   atualizarValor,
   estadoInicial,
@@ -43,13 +44,13 @@ describe('XLSX round-trip — overrides do usuário', () => {
     }
   })
 
-  test('custo de aquisição preservado em venda_ativo_pos2026', async () => {
+  test('custo de aquisição preservado em venda_ativo', async () => {
     let original = estadoInicial()
-    original = atualizarValor(original, 2030, 'venda_ativo_pos2026', 200_000)
-    original = atualizarReducaoBase(original, 2030, 'venda_ativo_pos2026', 150_000)
+    original = atualizarValor(original, 2030, 'venda_ativo', 200_000)
+    original = atualizarReducaoBase(original, 2030, 'venda_ativo', 150_000)
 
     const importado = await roundTrip(original)
-    const d = importado[2030].venda_ativo_pos2026
+    const d = importado[2030].venda_ativo
 
     assert.equal(d.valor, 200_000)
     assert.equal(d.reducaoBase, 150_000)
@@ -69,6 +70,21 @@ describe('XLSX round-trip — overrides do usuário', () => {
     const importado = await roundTrip(original)
     // Após import, aliqCbs deve continuar 8.50 (mesmo que default — sem mudança visível)
     assert.equal(importado[2030].rec_locacao.aliqCbs, 8.50)
+  })
+
+  test('bucketAquisicao em venda_ativo sobrevive ao round-trip (v4)', async () => {
+    let original = estadoInicial()
+    original = atualizarValor(original, 2031, 'venda_ativo', 100_000)
+    original = atualizarReducaoBase(original, 2031, 'venda_ativo', 60_000)
+    original = atualizarBucketAquisicao(original, 2031, '2030')
+
+    const importado = await roundTrip(original)
+    const d = importado[2031].venda_ativo
+
+    assert.equal(d.bucketAquisicao, '2030', 'bucket deve persistir após import')
+    // Bucket 2030 vendido em 2031: CBS cheia (fora janela 2024-2026), IBS fator 0,8
+    assert.equal(d.baseCbs, 100_000, 'CBS base = valor cheio (bucket fora janela CBS)')
+    assert.equal(d.baseIbs, 100_000 - 60_000 * 0.8, 'IBS base = 100k − 48k')
   })
 
   test('override de alíquota individual via atualizarAliquota é preservado', async () => {

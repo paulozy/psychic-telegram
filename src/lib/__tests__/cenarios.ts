@@ -9,6 +9,7 @@
  */
 
 import {
+  atualizarReducaoBase,
   atualizarValor,
   estadoInicial,
 } from '../simulador.ts'
@@ -33,7 +34,7 @@ function setupSmall(estado: Estado, ano: number): Estado {
   // Receita R$ 8M: 92% loc / 3% fin / 5% venda. Frota ~200 carros (~R$ 16M ativos).
   estado = atualizarValor(estado, ano, 'rec_locacao', 7_360_000)
   estado = atualizarValor(estado, ano, 'receita_financeira', 240_000)
-  estado = atualizarValor(estado, ano, 'venda_ativo_pre2026', 400_000)
+  estado = atualizarValor(estado, ano, 'venda_ativo', 400_000)
   estado = atualizarValor(estado, ano, 'compra_ativo', 4_000_000)
   estado = atualizarValor(estado, ano, 'cred_serv', 600_000)
   estado = atualizarValor(estado, ano, 'cred_deprec', 1_200_000)
@@ -45,7 +46,7 @@ function setupMidBaseline(estado: Estado, ano: number): Estado {
   // Baseline Arval: R$ 40M / 1000 carros (~R$ 90M ativos). Renovação ~25%/yr.
   estado = atualizarValor(estado, ano, 'rec_locacao', 35_200_000)
   estado = atualizarValor(estado, ano, 'receita_financeira', 1_600_000)
-  estado = atualizarValor(estado, ano, 'venda_ativo_pre2026', 3_200_000)
+  estado = atualizarValor(estado, ano, 'venda_ativo', 3_200_000)
   estado = atualizarValor(estado, ano, 'compra_ativo', 22_000_000)
   estado = atualizarValor(estado, ano, 'cred_serv', 3_000_000)
   estado = atualizarValor(estado, ano, 'cred_deprec', 6_500_000)
@@ -57,7 +58,7 @@ function setupLarge(estado: Estado, ano: number): Estado {
   // Multi-estadual: R$ 220M / 5000 carros (~R$ 450M ativos).
   estado = atualizarValor(estado, ano, 'rec_locacao', 187_000_000)
   estado = atualizarValor(estado, ano, 'receita_financeira', 11_000_000)
-  estado = atualizarValor(estado, ano, 'venda_ativo_pre2026', 22_000_000)
+  estado = atualizarValor(estado, ano, 'venda_ativo', 22_000_000)
   estado = atualizarValor(estado, ano, 'compra_ativo', 110_000_000)
   estado = atualizarValor(estado, ano, 'cred_serv', 16_000_000)
   estado = atualizarValor(estado, ano, 'cred_deprec', 32_000_000)
@@ -67,10 +68,12 @@ function setupLarge(estado: Estado, ano: number): Estado {
 
 function setupHeavyDisposal(estado: Estado, ano: number): Estado {
   // Frota em renovação intensa: venda_ativo 27% da receita.
-  // Stress-test da isenção transitória 2027-2029.
+  // Stress-test do art. 406: bucket default '2024-2026' + custo > venda = ganho zero = tributo zero.
   estado = atualizarValor(estado, ano, 'rec_locacao', 26_600_000)
   estado = atualizarValor(estado, ano, 'receita_financeira', 1_140_000)
-  estado = atualizarValor(estado, ano, 'venda_ativo_pre2026', 10_260_000)
+  estado = atualizarValor(estado, ano, 'venda_ativo', 10_260_000)
+  // Custo de aquisição típico > venda (desmobilização com depreciação) → isenção efetiva.
+  estado = atualizarReducaoBase(estado, ano, 'venda_ativo', 13_000_000)
   estado = atualizarValor(estado, ano, 'compra_ativo', 30_000_000)
   estado = atualizarValor(estado, ano, 'cred_serv', 2_800_000)
   estado = atualizarValor(estado, ano, 'cred_deprec', 6_500_000)

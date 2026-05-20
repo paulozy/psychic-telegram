@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { apurarAno, atualizarReducaoBase, atualizarValor, estadoInicial } from '../simulador.ts'
+import { apurarAno, atualizarBucketAquisicao, atualizarReducaoBase, atualizarValor, estadoInicial } from '../simulador.ts'
 import { CENARIOS } from './cenarios.ts'
 
 const TOLERANCIA_PP = 2
@@ -58,24 +58,28 @@ describe('Cenários canônicos — invariantes universais', () => {
 })
 
 describe('Cenários canônicos — checagens específicas', () => {
-  test('Cenário 4 (heavy-disposal) 2027: venda_ativo gera ZERO tributo (isenção)', () => {
+  test('Cenário 4 (heavy-disposal) 2027: CBS zero (custo > venda); IBS regular (ainda sem proteção)', () => {
+    // Setup: bucket '2024-2026' + custo 13M > venda 10,26M.
+    // CBS protegida desde 2027 → base = max(0, 10,26M - 13M) = 0. CBS = 0.
+    // IBS NÃO protegida em 2027 (proteção só desde 2029) → base = valor cheio.
     const cenario = CENARIOS.find(c => c.nome === '4-heavy-2027')!
     let estado = estadoInicial()
     estado = cenario.setup(estado)
 
-    const d = estado[2027].venda_ativo_pre2026
-    assert.equal(d.valCbs, 0, 'CBS de venda_ativo_pre2026 em 2027 deve ser 0 (isenção)')
-    assert.equal(d.valIbsE, 0, 'IBS-E de venda_ativo em 2027 deve ser 0')
-    assert.equal(d.valIbsM, 0, 'IBS-M de venda_ativo em 2027 deve ser 0')
+    const d = estado[2027].venda_ativo
+    assert.equal(d.valCbs, 0, 'CBS = 0 quando custo > venda (art. 406)')
+    // IBS sem proteção em 2027 → tributo cheio sobre venda: 10,26M × (0,05+0,05)% = 10.260
+    assert.ok(d.valIbsE > 0, 'IBS-E > 0 em 2027 (sem proteção; cobra venda integral)')
   })
 
-  test('Cenário 4 (heavy-disposal) 2029: venda_ativo gera ZERO tributo (isenção)', () => {
+  test('Cenário 4 (heavy-disposal) 2029: venda_ativo isenta via custo > venda', () => {
     const cenario = CENARIOS.find(c => c.nome === '4-heavy-2029')!
     let estado = estadoInicial()
     estado = cenario.setup(estado)
 
-    const d = estado[2029].venda_ativo_pre2026
-    assert.equal(d.valCbs, 0)
+    const d = estado[2029].venda_ativo
+    assert.equal(d.valCbs, 0, 'CBS = 0 (custo > venda, bucket 2024-2026)')
+    // Em 2029, bucket 2024-2026 ganha proteção IBS (fator 1,0). Custo > venda → IBS zero.
     assert.equal(d.valIbsE, 0)
     assert.equal(d.valIbsM, 0)
   })
@@ -104,30 +108,32 @@ describe('Cenários canônicos — checagens específicas', () => {
       `Cenário 5 2033: carga ${a.cargaConsolidada.toFixed(2)}% deve estar próxima de 27%`)
   })
 
-  test('Q3/Q4 2030: venda_ativo com ganho tributa só CBS sobre excedente', () => {
-    // Pós 2ª rodada Arval: ganho = valor − custo, tributa CBS apenas em 2030-2031.
+  test('art. 406 — bucket 2024-2026 em 2030: CBS sobre ganho, IBS também sobre ganho (fator 1,0)', () => {
+    // 4ª rodada: bucket 2024-2026 tem proteção CBS desde 2027 E proteção IBS desde 2029 com fator 1,0.
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 60_000)  // venda
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 50_000)  // custo
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 60_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 50_000)
+    // bucketAquisicao default = '2024-2026'
 
-    const d = estado[2030].venda_ativo_pos2026
-    // ganho = 10.000 → CBS = 10k × 8,5% = 850
-    assert.ok(Math.abs(d.valCbs - 850) < 1)
-    assert.equal(d.valIbsE, 0, 'IBS-E isento em 2030 para venda_ativo')
-    assert.equal(d.valIbsM, 0, 'IBS-M isento em 2030')
+    const d = estado[2030].venda_ativo
+    // ganho = 10.000
+    // CBS 8,5% × 10k = 850 (proteção CBS aplicada)
+    assert.ok(Math.abs(d.valCbs - 850) < 1, `valCbs = ${d.valCbs}, esperado 850`)
+    // IBS protegida fator 1,0 → base = max(0, 60k - 50k×1,0) = 10k. IBS-E 3,2% = 320; IBS-M 0,5% = 50.
+    assert.ok(Math.abs(d.valIbsE - 320) < 1, `valIbsE = ${d.valIbsE}, esperado 320`)
+    assert.ok(Math.abs(d.valIbsM - 50) < 1, `valIbsM = ${d.valIbsM}, esperado 50`)
   })
 
-  test('Q3/Q4 2032: venda_ativo com ganho tributa CBS + IBS sobre excedente', () => {
-    // Pós 2ª rodada Arval: a partir de 2032, IBS também incide sobre o ganho.
+  test('art. 406 — bucket 2024-2026 em 2032: CBS + IBS sobre ganho (fator 1,0)', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2032, 'venda_ativo_pos2026', 100_000)
-    estado = atualizarReducaoBase(estado, 2032, 'venda_ativo_pos2026', 60_000)  // custo
+    estado = atualizarValor(estado, 2032, 'venda_ativo', 100_000)
+    estado = atualizarReducaoBase(estado, 2032, 'venda_ativo', 60_000)
 
-    const d = estado[2032].venda_ativo_pos2026
-    // ganho = 40.000; CBS 8,5%, IBS-E 6,40%, IBS-M 1,00%
-    assert.ok(Math.abs(d.valCbs - 40_000 * 0.085) < 1, `valCbs = ${d.valCbs}`)
-    assert.ok(Math.abs(d.valIbsE - 40_000 * 0.064) < 1, `valIbsE = ${d.valIbsE}`)
-    assert.ok(Math.abs(d.valIbsM - 40_000 * 0.010) < 1, `valIbsM = ${d.valIbsM}`)
+    const d = estado[2032].venda_ativo
+    // ganho = 40.000; CBS 8,5% × 40k = 3.400; IBS-E 6,40% × 40k = 2.560; IBS-M 1,00% × 40k = 400.
+    assert.ok(Math.abs(d.valCbs - 3_400) < 1, `valCbs = ${d.valCbs}`)
+    assert.ok(Math.abs(d.valIbsE - 2_560) < 1, `valIbsE = ${d.valIbsE}`)
+    assert.ok(Math.abs(d.valIbsM - 400) < 1, `valIbsM = ${d.valIbsM}`)
   })
 
   test('Q6 2027+: cred_deprec não gera crédito (alíquotas zeradas)', () => {
@@ -141,28 +147,36 @@ describe('Cenários canônicos — checagens específicas', () => {
     assert.equal(d.valIbsM, 0)
   })
 
-  test('Q4 venda_ativo_pre2026: SEMPRE isenta, mesmo em 2030+ (3ª rodada)', () => {
-    // Frota adquirida até 2026 nunca tributa CBS/IBS, independente do ano da venda.
-    for (const ano of [2026, 2027, 2029, 2030, 2032, 2033]) {
+  test('art. 406 — bucket 2024-2026: isenção via custo ≥ venda (ganho zero)', () => {
+    // Para frota pré-2026 vendida com custo informado >= venda, ganho = 0 → tributo = 0.
+    for (const ano of [2027, 2029, 2030, 2032, 2033]) {
       let estado = estadoInicial()
-      estado = atualizarValor(estado, ano, 'venda_ativo_pre2026', 1_000_000)
-      const d = estado[ano].venda_ativo_pre2026
-      assert.equal(d.valCbs, 0, `CBS deve ser 0 em ${ano} para frota pré-2026`)
-      assert.equal(d.valIbsE, 0, `IBS-E deve ser 0 em ${ano} para frota pré-2026`)
-      assert.equal(d.valIbsM, 0, `IBS-M deve ser 0 em ${ano} para frota pré-2026`)
+      estado = atualizarValor(estado, ano, 'venda_ativo', 1_000_000)
+      estado = atualizarReducaoBase(estado, ano, 'venda_ativo', 1_500_000)  // custo > venda
+      const d = estado[ano].venda_ativo
+      assert.equal(d.valCbs, 0, `CBS = 0 em ${ano} (custo > venda)`)
+      // IBS protegido só em 2029+
+      if (ano >= 2029) {
+        assert.equal(d.valIbsE, 0, `IBS-E = 0 em ${ano} (protegido)`)
+        assert.equal(d.valIbsM, 0, `IBS-M = 0 em ${ano} (protegido)`)
+      }
     }
   })
 
-  test('Q4 venda_ativo_pos2026 em 2030: tributa CBS sobre ganho', () => {
+  test('art. 406 — bucket 2030 em 2031: CBS regular sobre tudo, IBS protegido fator 0,8', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 100_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 60_000)  // custo
+    estado = atualizarValor(estado, 2031, 'venda_ativo', 100_000)
+    estado = atualizarReducaoBase(estado, 2031, 'venda_ativo', 80_000)  // VLA
+    estado = atualizarBucketAquisicao(estado, 2031, '2030')
 
-    const d = estado[2030].venda_ativo_pos2026
-    // ganho = 40k → CBS 8,5% = 3.400; IBS isento em 2030-2031
-    assert.ok(Math.abs(d.valCbs - 40_000 * 0.085) < 1)
-    assert.equal(d.valIbsE, 0)
-    assert.equal(d.valIbsM, 0)
+    const d = estado[2031].venda_ativo
+    // CBS: bucket 2030 NÃO tem proteção CBS (fora janela jul/24-dez/26) → base = valor cheio.
+    // CBS = 100k × 8,5% = 8.500
+    assert.ok(Math.abs(d.valCbs - 8_500) < 1, `valCbs = ${d.valCbs}, esperado 8500`)
+    // IBS: bucket 2030 + 2031 → proteção com fator 0,8. base = max(0, 100k - 80k×0,8) = max(0, 100k - 64k) = 36k.
+    // IBS-E 4,80% × 36k = 1.728; IBS-M 0,75% × 36k = 270.
+    assert.ok(Math.abs(d.valIbsE - 1_728) < 1, `valIbsE = ${d.valIbsE}`)
+    assert.ok(Math.abs(d.valIbsM - 270) < 1, `valIbsM = ${d.valIbsM}`)
   })
 
   test('Q2 2026: receita_financeira tributa 0,65 PIS + 4,00 COFINS', () => {

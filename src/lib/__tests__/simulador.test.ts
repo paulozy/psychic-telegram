@@ -145,35 +145,35 @@ describe('apurarAno — IBS unificado (defeito #3)', () => {
 describe('calcularOp — VLA na venda de ativo (defeito #2)', () => {
   test('parcela ≤ VLA: alíquota zero CBS e IBS', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 100_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 120_000)  // VLA > valor
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 100_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 120_000)  // VLA > valor
 
-    const d = estado[2030].venda_ativo_pos2026
+    const d = estado[2030].venda_ativo
     assert.equal(d.valCbs, 0, 'CBS zero quando VLA cobre todo o valor')
     assert.equal(d.valIbsE, 0)
     assert.equal(d.valIbsM, 0)
   })
 
-  test('parcela > custo: tributa apenas o ganho em CBS (2030 — IBS isento)', () => {
+  test('art. 406 — bucket 2024-2026 vendido em 2030: CBS + IBS sobre ganho (fator IBS 1,0)', () => {
+    // 4ª rodada: bucket 2024-2026 → CBS protegida (ganho-only) + IBS protegida fator 1,0 desde 2029.
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 200_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 150_000)
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 200_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 150_000)
+    // bucketAquisicao default = '2024-2026'
 
-    const d = estado[2030].venda_ativo_pos2026
-    // 2ª rodada Arval (Q3/Q4): 2030 tributa só CBS sobre o ganho; IBS isento.
-    // ganho = 50.000 → CBS 8.50% = 4.250; IBS = 0
-    assert.ok(Math.abs(d.valCbs - 50_000 * 0.085) < APROX,
-      `valCbs = ${d.valCbs}, esperado ${50_000 * 0.085}`)
-    assert.equal(d.valIbsE, 0, 'IBS-E isento em 2030 para venda_ativo')
-    assert.equal(d.valIbsM, 0, 'IBS-M isento em 2030 para venda_ativo')
+    const d = estado[2030].venda_ativo
+    // ganho = 50.000
+    assert.ok(Math.abs(d.valCbs - 50_000 * 0.085) < APROX, `valCbs = ${d.valCbs}`)
+    assert.ok(Math.abs(d.valIbsE - 50_000 * 0.032) < APROX, `valIbsE = ${d.valIbsE}`)
+    assert.ok(Math.abs(d.valIbsM - 50_000 * 0.005) < APROX, `valIbsM = ${d.valIbsM}`)
   })
 
   test('ganho zero (custo > valor): nenhum tributo em 2030+', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 60_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 80_000)  // custo > valor
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 60_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 80_000)  // custo > valor
 
-    const d = estado[2030].venda_ativo_pos2026
+    const d = estado[2030].venda_ativo
     assert.equal(d.valCbs, 0, 'CBS zero quando custo > valor (venda com prejuízo)')
     assert.equal(d.valIbsE, 0)
     assert.equal(d.valIbsM, 0)
@@ -181,10 +181,10 @@ describe('calcularOp — VLA na venda de ativo (defeito #2)', () => {
 
   test('custo = 0 (default): tributa valor integral em 2032+', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2032, 'venda_ativo_pos2026', 100_000)
+    estado = atualizarValor(estado, 2032, 'venda_ativo', 100_000)
     // não chama atualizarReducaoBase — custo permanece 0
 
-    const d = estado[2032].venda_ativo_pos2026
+    const d = estado[2032].venda_ativo
     // 2032: CBS 8.50 + IBS-E 6.40 + IBS-M 1.00 = 15.90% sobre valor integral
     assert.ok(Math.abs(d.valCbs - 100_000 * 0.085) < APROX,
       'sem custo, CBS sobre valor integral')
@@ -228,10 +228,10 @@ describe('XLSX import — backward compat VLA (F1)', () => {
   test('v1 sem VLA: comportamento equivalente a vla=0 (tributação cheia)', () => {
     let estado = estadoInicial()
     // Simula reconstrução de uma linha v1 (sem vla undefined no RowParsed)
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 200_000)
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 200_000)
     // NÃO chama atualizarReducaoBase — emulando ausência da coluna VLA na planilha v1
 
-    const d = estado[2030].venda_ativo_pos2026
+    const d = estado[2030].venda_ativo
     assert.equal(d.reducaoBase, 0, 'reducaoBase permanece 0 quando não informado')
     // 2030 venda_ativo: aliqCbs 8.50 → CBS sobre valor cheio
     assert.ok(Math.abs(d.valCbs - 200_000 * 0.085) < APROX,
@@ -240,10 +240,10 @@ describe('XLSX import — backward compat VLA (F1)', () => {
 
   test('v2 com VLA informado: tributa só o excedente', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 200_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', 150_000)  // como o importer faria
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 200_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 150_000)  // como o importer faria
 
-    const d = estado[2030].venda_ativo_pos2026
+    const d = estado[2030].venda_ativo
     assert.equal(d.reducaoBase, 150_000)
     assert.ok(Math.abs(d.valCbs - 50_000 * 0.085) < APROX,
       `valCbs = ${d.valCbs}, esperado ${50_000 * 0.085}`)
@@ -252,15 +252,15 @@ describe('XLSX import — backward compat VLA (F1)', () => {
   test('round-trip: estado preservado após reconstrução com VLA', () => {
     // Original
     let original = estadoInicial()
-    original = atualizarValor(original, 2030, 'venda_ativo_pos2026', 200_000)
-    original = atualizarReducaoBase(original, 2030, 'venda_ativo_pos2026', 150_000)
-    const dOrig = original[2030].venda_ativo_pos2026
+    original = atualizarValor(original, 2030, 'venda_ativo', 200_000)
+    original = atualizarReducaoBase(original, 2030, 'venda_ativo', 150_000)
+    const dOrig = original[2030].venda_ativo
 
     // "Reconstrução" — equivalente ao que importarXlsx faz ao ler dados emitidos pelo exportXlsx
     let reconstruido = estadoInicial()
-    reconstruido = atualizarValor(reconstruido, 2030, 'venda_ativo_pos2026', dOrig.valor)
-    reconstruido = atualizarReducaoBase(reconstruido, 2030, 'venda_ativo_pos2026', dOrig.reducaoBase)
-    const dRecon = reconstruido[2030].venda_ativo_pos2026
+    reconstruido = atualizarValor(reconstruido, 2030, 'venda_ativo', dOrig.valor)
+    reconstruido = atualizarReducaoBase(reconstruido, 2030, 'venda_ativo', dOrig.reducaoBase)
+    const dRecon = reconstruido[2030].venda_ativo
 
     assert.equal(dRecon.valor, dOrig.valor, 'valor preservado')
     assert.equal(dRecon.reducaoBase, dOrig.reducaoBase, 'reducaoBase preservado')
@@ -271,10 +271,10 @@ describe('XLSX import — backward compat VLA (F1)', () => {
 
   test('VLA negativo é clampeado em 0 (defesa em profundidade)', () => {
     let estado = estadoInicial()
-    estado = atualizarValor(estado, 2030, 'venda_ativo_pos2026', 100_000)
-    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo_pos2026', -50_000)
+    estado = atualizarValor(estado, 2030, 'venda_ativo', 100_000)
+    estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', -50_000)
 
-    const d = estado[2030].venda_ativo_pos2026
+    const d = estado[2030].venda_ativo
     assert.equal(d.reducaoBase, 0, 'atualizarReducaoBase clampa negativos em 0')
     // CBS aplicada sobre valor cheio (já que reducaoBase=0)
     assert.ok(Math.abs(d.valCbs - 100_000 * 0.085) < APROX)
