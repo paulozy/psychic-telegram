@@ -1,6 +1,7 @@
 import type { DadosOperacao } from '@/types/simulador'
 
-export const TEMPLATE_VERSION = 'arval-template-v3'
+export const TEMPLATE_VERSION = 'arval-template-v4'
+export const TEMPLATE_VERSION_V3 = 'arval-template-v3'
 export const TEMPLATE_VERSION_V2 = 'arval-template-v2'
 export const TEMPLATE_VERSION_V1 = 'arval-template-v1'
 
@@ -14,7 +15,7 @@ export interface SheetDetalhe {
 export const SHEETS_DETALHE: SheetDetalhe[] = [
   { nome: 'Rec. Locação',       ops: ['rec_locacao'] },
   { nome: 'Receita Financeira', ops: ['receita_financeira'] },
-  { nome: 'Ativo',              ops: ['venda_ativo_pre2026', 'venda_ativo_pos2026', 'compra_ativo'] },
+  { nome: 'Ativo',              ops: ['venda_ativo', 'compra_ativo'] },
   { nome: 'Serv. Tomados',      ops: ['cred_serv'] },
   { nome: 'Deprec. Fiscal',     ops: ['cred_deprec'] },
   { nome: 'Juros s-Empréstimo', ops: ['cred_juros'] },
@@ -27,7 +28,7 @@ export const HEADERS = [
   'Base CBS', 'Alíq. CBS (%)', 'Valor CBS',
   'Base IBS', 'Alíq. IBS Est. (%)', 'Alíq. IBS Mun. (%)',
   'Valor IBS Est.', 'Valor IBS Mun.', 'Total Tributos',
-  'VLA',
+  'VLA', 'Bucket aquisição',
 ] as const
 
 export const COL_ANO = 1
@@ -39,6 +40,7 @@ export const COL_ALIQ_CBS = 11
 export const COL_ALIQ_IBS_E = 14
 export const COL_ALIQ_IBS_M = 15
 export const COL_VLA = 19
+export const COL_BUCKET = 20
 
 export const COLS_EDITAVEIS: ReadonlyArray<number> = [
   COL_VALOR, COL_ALIQ_PIS, COL_ALIQ_COF, COL_ALIQ_CBS, COL_ALIQ_IBS_E, COL_ALIQ_IBS_M,

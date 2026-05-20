@@ -2,6 +2,16 @@ export type TipoOperacao = 'debito' | 'credito'
 
 export type CategoriaReceita = 'padrao' | 'regime_especifico' | 'fora_base'
 
+export type BucketAquisicao =
+  | 'pre-jul-2024'
+  | '2024-2026'
+  | '2027-2028'
+  | '2029'
+  | '2030'
+  | '2031'
+  | '2032'
+  | '2033+'
+
 export interface Operacao {
   key: string
   label: string
@@ -11,8 +21,10 @@ export interface Operacao {
 
 export interface DadosOperacao {
   valor: number
-  /** Redução de base aplicada antes do cálculo de CBS/IBS. Em venda_ativo equivale ao VLA (LC 214/2025 arts. 108/109 + 407). */
+  /** Redução de base aplicada antes do cálculo de CBS/IBS. Em venda_ativo equivale ao VLA (LC 214/2025 arts. 108/109 + 406). */
   reducaoBase: number
+  /** Ano (ou intervalo) de aquisição do bem. Só usado em venda_ativo. Default '2024-2026'. */
+  bucketAquisicao?: BucketAquisicao
   basePis: number
   aliqPis: number
   valPis: number

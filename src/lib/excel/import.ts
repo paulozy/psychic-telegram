@@ -2,13 +2,15 @@ import ExcelJS from 'exceljs'
 import {
   ALIQUOTAS_POR_ANO,
   ANOS,
+  BUCKETS_AQUISICAO,
   OPERACOES,
   atualizarAliquota,
+  atualizarBucketAquisicao,
   atualizarValor,
   atualizarReducaoBase,
   estadoInicial,
 } from '../simulador.ts'
-import type { DadosOperacao, Estado } from '@/types/simulador'
+import type { BucketAquisicao, DadosOperacao, Estado } from '@/types/simulador'
 import {
   ALIQUOTA_FIELDS,
   COL_ANO,
@@ -20,6 +22,7 @@ import {
   TEMPLATE_VERSION,
   TEMPLATE_VERSION_V1,
   TEMPLATE_VERSION_V2,
+  TEMPLATE_VERSION_V3,
   type SheetDetalhe,
 } from './schema.ts'
 
@@ -107,6 +110,7 @@ interface RowParsed {
   opKey: string
   valor: number
   reducaoBase?: number
+  bucketAquisicao?: BucketAquisicao
   aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>
 }
 
@@ -161,8 +165,11 @@ function parseDetalheSheet(
     }
 
     const opLabel = readString(row.getCell(colOp).value)
-    // Backward compat v1/v2: label "Venda Ativo" antigo mapeia para "Venda Ativo (pré-2026)" (premissa: frota antiga).
-    const labelNormalizado = opLabel === 'Venda Ativo' ? 'Venda Ativo (pré-2026)' : opLabel
+    // Backward compat XLSX v3: labels "Venda Ativo (pré-2026)" e "Venda Ativo (pós-2026)" mapeiam para "Venda Ativo".
+    // Mantemos o label original para inferir o bucket default na leitura.
+    const ehVendaPre = opLabel === 'Venda Ativo (pré-2026)'
+    const ehVendaPos = opLabel === 'Venda Ativo (pós-2026)'
+    const labelNormalizado = (ehVendaPre || ehVendaPos) ? 'Venda Ativo' : opLabel
     const op = opsValidos.find(o => o.label === labelNormalizado)
     if (!op) {
       errors.push({
@@ -221,7 +228,7 @@ function parseDetalheSheet(
     // VLA é opcional (templates v1 não têm essa coluna; só venda_ativo usa)
     let reducaoBase: number | undefined = undefined
     const colVla = headerMap['VLA']
-    if (colVla !== undefined && op.key.startsWith('venda_ativo')) {
+    if (colVla !== undefined && op.key === 'venda_ativo') {
       const vlaRaw = row.getCell(colVla).value
       // Célula com "—" ou texto não numérico vira null em readNumber; aceitamos como ausente.
       const vlaNum = readNumber(vlaRaw)
@@ -230,23 +237,41 @@ function parseDetalheSheet(
       }
     }
 
-    rows.push({ ano, opKey: op.key, valor, reducaoBase, aliquotas })
+    // Bucket de aquisição: lido da coluna v4 OU inferido do label v3.
+    let bucketAquisicao: BucketAquisicao | undefined = undefined
+    if (op.key === 'venda_ativo') {
+      const colBucket = headerMap['Bucket aquisição']
+      if (colBucket !== undefined) {
+        const bucketStr = readString(row.getCell(colBucket).value)
+        if (bucketStr && (BUCKETS_AQUISICAO as readonly string[]).includes(bucketStr)) {
+          bucketAquisicao = bucketStr as BucketAquisicao
+        }
+      }
+      // Backward compat v3: pré-2026 → '2024-2026', pós-2026 → '2027-2028'
+      if (bucketAquisicao === undefined) {
+        if (ehVendaPre) bucketAquisicao = '2024-2026'
+        else if (ehVendaPos) bucketAquisicao = '2027-2028'
+      }
+    }
+
+    rows.push({ ano, opKey: op.key, valor, reducaoBase, bucketAquisicao, aliquotas })
   }
 
   return rows
 }
 
-function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'template-v3' | 'export' | 'invalido' {
+function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'template-v3' | 'template-v4' | 'export' | 'invalido' {
   const leiaMe = wb.getWorksheet(SHEET_LEIAME)
   if (leiaMe) {
     const versao = readString(leiaMe.getCell('B2').value)
-    if (versao === TEMPLATE_VERSION) return 'template-v3'
+    if (versao === TEMPLATE_VERSION) return 'template-v4'
+    if (versao === TEMPLATE_VERSION_V3) return 'template-v3'
     if (versao === TEMPLATE_VERSION_V2) return 'template-v2'
     if (versao === TEMPLATE_VERSION_V1) return 'template-v1'
     errors.push({
       sheet: SHEET_LEIAME,
       cell: 'B2',
-      reason: `Versão de template incompatível: "${versao || '(vazio)'}". Aceitos: ${TEMPLATE_VERSION}, ${TEMPLATE_VERSION_V2}, ${TEMPLATE_VERSION_V1}`,
+      reason: `Versão de template incompatível: "${versao || '(vazio)'}". Aceitos: ${TEMPLATE_VERSION}, ${TEMPLATE_VERSION_V3}, ${TEMPLATE_VERSION_V2}, ${TEMPLATE_VERSION_V1}`,
     })
     return 'invalido'
   }
@@ -311,7 +336,10 @@ export async function importarXlsx(file: File, estadoAtual: Estado): Promise<Imp
   let novo = estadoInicial()
   for (const r of todasRows) {
     novo = atualizarValor(novo, r.ano, r.opKey, r.valor)
-    if (r.reducaoBase !== undefined && r.opKey.startsWith('venda_ativo')) {
+    if (r.bucketAquisicao !== undefined && r.opKey === 'venda_ativo') {
+      novo = atualizarBucketAquisicao(novo, r.ano, r.bucketAquisicao)
+    }
+    if (r.reducaoBase !== undefined && r.opKey === 'venda_ativo') {
       novo = atualizarReducaoBase(novo, r.ano, r.opKey, r.reducaoBase)
     }
     const tabela = ALIQUOTAS_POR_ANO[r.ano][r.opKey]

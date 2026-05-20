@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
+import { BUCKETS_AQUISICAO, OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
 import { NumberInputBR } from './NumberInputBR'
 import { PainelAliquotas } from './PainelAliquotas'
 import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO } from '@/lib/tooltips'
-import type { Estado, DadosOperacao } from '@/types/simulador'
+import type { BucketAquisicao, Estado, DadosOperacao } from '@/types/simulador'
 
 interface PainelEsquerdoProps {
   estado: Estado
@@ -13,18 +12,28 @@ interface PainelEsquerdoProps {
   onSetAno: (ano: number) => void
   onValorChange: (key: string, valor: number) => void
   onReducaoChange: (key: string, valor: number) => void
+  onBucketChange: (bucket: BucketAquisicao) => void
   onAliquotasGlobais: (aliquotas: Partial<Pick<DadosOperacao, 'aliqPis' | 'aliqCof' | 'aliqCbs' | 'aliqIbsE' | 'aliqIbsM'>>) => void
 }
 
 function labelReducao(opKey: string): string {
-  return opKey.startsWith('venda_ativo') ? 'Custo de aquisição' : 'Redução'
+  return opKey === 'venda_ativo' ? 'Custo de aquisição' : 'Redução'
 }
 
 function tooltipReducao(opKey: string): string {
-  return opKey.startsWith('venda_ativo') ? TOOLTIPS_CONCEITO.custoAquisicao : TOOLTIPS_CONCEITO.reducaoBase
+  return opKey === 'venda_ativo' ? TOOLTIPS_CONCEITO.custoAquisicao : TOOLTIPS_CONCEITO.reducaoBase
 }
 
-type Tab = 'operacoes' | 'venda_ativo'
+const BUCKET_LABELS: Record<BucketAquisicao, string> = {
+  'pre-jul-2024': 'Antes de jul/2024',
+  '2024-2026':    '2024 – 2026',
+  '2027-2028':    '2027 – 2028',
+  '2029':         '2029',
+  '2030':         '2030',
+  '2031':         '2031',
+  '2032':         '2032',
+  '2033+':        '2033 em diante',
+}
 
 export function PainelEsquerdo({
   estado,
@@ -32,21 +41,15 @@ export function PainelEsquerdo({
   onSetAno,
   onValorChange,
   onReducaoChange,
+  onBucketChange,
   onAliquotasGlobais,
 }: PainelEsquerdoProps) {
-  const [tab, setTab] = useState<Tab>('operacoes')
-
-  // totais do rodapé (sempre considerando TODAS as operações, independente da tab visível)
   let totalDeb = 0, totalCred = 0
   OPERACOES.forEach(op => {
     const v = estado[anoAtivo][op.key].valor
     if (op.tipo === 'debito') totalDeb += v
     else totalCred += v
   })
-
-  const operacoesVisiveis = tab === 'operacoes'
-    ? OPERACOES.filter(op => !op.key.startsWith('venda_ativo_'))
-    : OPERACOES.filter(op => op.key.startsWith('venda_ativo_'))
 
   return (
     <aside className="left-panel">
@@ -75,25 +78,9 @@ export function PainelEsquerdo({
         onAplicarAliquotas={onAliquotasGlobais}
       />
 
-      {/* Tabs */}
-      <div className="rec-tabs" data-tour="rec-tabs">
-        <button
-          className={tab === 'operacoes' ? 'active' : ''}
-          onClick={() => setTab('operacoes')}
-        >
-          Operações
-        </button>
-        <button
-          className={tab === 'venda_ativo' ? 'active' : ''}
-          onClick={() => setTab('venda_ativo')}
-        >
-          Venda Ativo
-        </button>
-      </div>
-
       {/* Cards de receita */}
       <div className="receitas-scroll" data-tour="operacoes">
-        {operacoesVisiveis.map(op => {
+        {OPERACOES.map(op => {
           const d = estado[anoAtivo][op.key]
           return (
             <div
@@ -136,6 +123,21 @@ export function PainelEsquerdo({
                       onClick={e => e.stopPropagation()}
                     />
                   </div>
+                  {op.key === 'venda_ativo' && (
+                    <div className="rec-bucket-row" title={TOOLTIPS_CONCEITO.bucketAquisicao}>
+                      <span className="rec-reducao-label">Ano de aquisição</span>
+                      <select
+                        className="rec-bucket-select"
+                        value={d.bucketAquisicao ?? '2024-2026'}
+                        onChange={e => onBucketChange(e.target.value as BucketAquisicao)}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {BUCKETS_AQUISICAO.map(b => (
+                          <option key={b} value={b}>{BUCKET_LABELS[b]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {d.valor > 0 && d.reducaoBase <= d.valor && (
                     <small className="rec-base-efetiva">
                       Base efetiva: R$ {fmtBR(Math.max(0, d.valor - d.reducaoBase))}

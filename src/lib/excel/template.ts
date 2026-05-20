@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { ALIQUOTAS_POR_ANO, ANOS, OPERACOES } from '@/lib/simulador'
 import {
+  COL_BUCKET,
   COLS_EDITAVEIS,
   HEADERS,
   SHEETS_DETALHE,
@@ -110,9 +111,10 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
   ws.getColumn(1).width = 8
   ws.getColumn(2).width = 20
   for (let i = 3; i <= 19; i++) ws.getColumn(i).width = 16
+  ws.getColumn(COL_BUCKET).width = 18
 
   ws.getRow(1).height = 22
-  ws.mergeCells('A1:S1')
+  ws.mergeCells('A1:T1')
   const titleCell = ws.getCell('A1')
   titleCell.value = sheetNome.toUpperCase()
   applyTitle(titleCell)
@@ -173,13 +175,22 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
       }
       // Col 19 — VLA (editável só em venda_ativo; locked em outras)
       const vlaCell = row.getCell(19)
-      if (opKey.startsWith('venda_ativo')) {
+      if (opKey === 'venda_ativo') {
         vlaCell.value = 0
         vlaCell.numFmt = FMT_MONEY
         fillEditable(vlaCell)
       } else {
         vlaCell.value = '—'
         fillLocked(vlaCell)
+      }
+      // Col 20 — Bucket aquisição (editável só em venda_ativo; locked em outras)
+      const bucketCell = row.getCell(COL_BUCKET)
+      if (opKey === 'venda_ativo') {
+        bucketCell.value = '2024-2026'
+        fillEditable(bucketCell)
+      } else {
+        bucketCell.value = '—'
+        fillLocked(bucketCell)
       }
       rowNum++
     }
@@ -192,19 +203,20 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
   applyTotalStyle(totalRow.getCell(1))
   totalRow.getCell(2).value = ''
   applyTotalStyle(totalRow.getCell(2))
-  for (let c = 3; c <= 19; c++) {
+  for (let c = 3; c <= COL_BUCKET; c++) {
     const cell = totalRow.getCell(c)
     if (isAliqCol(c)) {
       cell.value = ''
     } else if (c === 19) {
-      // Total da coluna VLA/Custo — só faz sentido em sheets que têm venda_ativo
-      const sheetTemVendaAtivo = ops.some(k => k.startsWith('venda_ativo'))
+      const sheetTemVendaAtivo = ops.some(k => k === 'venda_ativo')
       if (sheetTemVendaAtivo) {
         cell.value = 0
         cell.numFmt = FMT_MONEY
       } else {
         cell.value = '—'
       }
+    } else if (c === COL_BUCKET) {
+      cell.value = ''
     } else {
       cell.value = 0
       cell.numFmt = FMT_MONEY

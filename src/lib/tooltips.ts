@@ -14,10 +14,8 @@ export const TOOLTIPS_OPERACAO: Record<string, string> = {
     'Receita de locação de frota — atividade-fim. Regime padrão CBS/IBS após 2026; sem regime específico na LC 214/2025.',
   receita_financeira:
     'Juros, dividendos e ganhos de aplicações. Fora da base de CBS/IBS para empresa não-financeira (LC 214/2025 art. 181+).',
-  venda_ativo_pre2026:
-    'Venda de imobilizado adquirido até 2026. SEMPRE isenta de CBS/IBS, independente do ano da venda (regra de transição LC 214/2025).',
-  venda_ativo_pos2026:
-    'Venda de imobilizado adquirido a partir de 2027. 2030-2031: CBS sobre o ganho (valor − custo). 2032+: CBS + IBS sobre o ganho. Informe o custo de aquisição.',
+  venda_ativo:
+    'Venda de imobilizado. Tributação depende do ano de aquisição (art. 406 LC 214/2025): bens 2024-2026 têm proteção CBS desde 2027; bens 2024-2032 têm proteção IBS desde 2029 (fator decrescente).',
   cred_serv:
     'Serviços de terceiros que geram crédito integral de CBS/IBS pela não-cumulatividade plena (LC 214/2025 art. 47).',
   compra_ativo:
@@ -55,8 +53,9 @@ export const TOOLTIPS_METRICA = {
 
 /** Tooltips de conceitos auxiliares e elementos de UI. */
 export const TOOLTIPS_CONCEITO = {
-  vla:             'Alias deprecated — use custoAquisicao para venda_ativo.',
-  custoAquisicao:  'Custo de aquisição do bem. A partir de 2030, a venda tributa apenas o ganho (valor − custo) em CBS; 2032+ inclui IBS. Isento até 2029.',
+  vla:             'Valor Líquido de Aquisição — custo do bem usado como protetor de base no art. 406 LC 214/2025.',
+  custoAquisicao:  'Valor Líquido de Aquisição (VLA). A parcela da venda ≤ VLA fica protegida (alíquota zero) na CBS e/ou IBS conforme o ano de aquisição.',
+  bucketAquisicao: 'Ano em que o bem foi adquirido. Define a janela e fator de proteção fiscal (CBS art. 406 desde 2027; IBS fator decrescente 1,0→0,6 entre 2029-2032).',
   reducaoBase:     'Parcela do valor da operação que não compõe a base de CBS/IBS.',
   baseEfetiva:     'Valor sobre o qual incide a alíquota: valor da operação menos redução/VLA, limitado a zero.',
   saldoCredor:     'Crédito acumulado quando os créditos do período superam os débitos. Aproveitado nos meses seguintes.',

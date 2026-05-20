@@ -15,22 +15,24 @@ import {
   atualizarValor,
   atualizarReducaoBase,
   atualizarAliquota,
+  atualizarBucketAquisicao,
   aplicarAliquotasGlobais,
 } from '@/lib/simulador'
 import { useLocalStorage } from '@/lib/useLocalStorage'
 import { exportarXlsx } from '@/lib/exportXlsx'
 import { gerarTemplate } from '@/lib/excel/template'
 import { importarXlsx, type ImportError } from '@/lib/excel/import'
-import type { Estado, DadosOperacao } from '@/types/simulador'
+import type { BucketAquisicao, Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
-  // v5: 3ª rodada Arval — venda_ativo separado em pre2026 + pos2026 (schema incompatível com v4).
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v5', estadoBase)
+  // v6: 4ª rodada Arval — venda_ativo unificado com bucketAquisicao (art. 406 LC 214/2025).
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v6', estadoBase)
 
   // Cleanup de chaves antigas (executa uma vez por sessão; idempotente).
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v5')
       localStorage.removeItem('arval-simulador-v4')
       localStorage.removeItem('arval-simulador-v3')
       localStorage.removeItem('arval-simulador-v2')
@@ -63,6 +65,10 @@ export function Simulador() {
     setEstado(prev => atualizarReducaoBase(prev, anoAtivo, key, valor))
   }, [anoAtivo])
 
+  const handleBucketChange = useCallback((bucket: BucketAquisicao) => {
+    setEstado(prev => atualizarBucketAquisicao(prev, anoAtivo, bucket))
+  }, [anoAtivo])
+
   const handleAliquotaChange = useCallback((
     key: string,
     field: keyof DadosOperacao,
@@ -80,8 +86,9 @@ export function Simulador() {
 
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v6')
       localStorage.removeItem('arval-simulador-v5')
-      localStorage.removeItem('arval-simulador-v2')  // limpa chave antiga também
+      localStorage.removeItem('arval-simulador-v2')
     }
     setEstado(estadoInicial())
     showToast('Dados limpos')
@@ -139,6 +146,7 @@ export function Simulador() {
 
   const handleLimparExemplo = useCallback(() => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('arval-simulador-v6')
       localStorage.removeItem('arval-simulador-v5')
       localStorage.removeItem('arval-simulador-v2')
     }
@@ -177,6 +185,7 @@ export function Simulador() {
           onSetAno={handleSetAno}
           onValorChange={handleValorChange}
           onReducaoChange={handleReducaoChange}
+          onBucketChange={handleBucketChange}
           onAliquotasGlobais={handleAliquotasGlobais}
         />
 
