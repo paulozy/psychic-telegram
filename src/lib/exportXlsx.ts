@@ -1,7 +1,13 @@
 import ExcelJS from 'exceljs'
 import type { Estado } from '@/types/simulador'
-import { ANOS, OPERACOES } from './simulador.ts'
-import { COL_BUCKET, HEADERS } from './excel/schema.ts'
+import { ANOS, OPERACOES, regraVendaAtivo } from './simulador.ts'
+import {
+  COL_BUCKET,
+  COL_FATOR_IBS,
+  HEADERS,
+  SHEET_LEIAME,
+  TEMPLATE_VERSION,
+} from './excel/schema.ts'
 import type { DadosOperacao } from '@/types/simulador'
 
 // ─── Colors ────────────────────────────────────────────────────────────────
@@ -96,10 +102,11 @@ function addDetailSheet(
   ws.getColumn(2).width = 20  // Operação
   for (let i = 3; i <= 19; i++) ws.getColumn(i).width = 16
   ws.getColumn(COL_BUCKET).width = 18
+  ws.getColumn(COL_FATOR_IBS).width = 12
 
   // Row 1 — title
   ws.getRow(1).height = 22
-  ws.mergeCells('A1:T1')
+  ws.mergeCells('A1:U1')
   const titleCell = ws.getCell('A1')
   titleCell.value = sheetName.toUpperCase()
   applyTitleStyle(titleCell)
@@ -180,6 +187,21 @@ function addDetailSheet(
         applyAltFill(bucketCell, ai)
       }
 
+      // Col 21 — Fator IBS (derivado de bucket × ano via art. 406)
+      const fatorCell = row.getCell(COL_FATOR_IBS)
+      if (key === 'venda_ativo') {
+        const regra = regraVendaAtivo(d.bucketAquisicao ?? '2024-2026', ano)
+        if (regra.aplicaProtecaoIBS) {
+          fatorCell.value = regra.fatorVLA_IBS
+          fatorCell.numFmt = '0.00'
+        } else {
+          fatorCell.value = '—'
+        }
+      } else {
+        fatorCell.value = '—'
+      }
+      applyAltFill(fatorCell, ai)
+
       rowNum++
     }
   }
@@ -218,6 +240,11 @@ function addDetailSheet(
   const bucketTotalCell = totalRow.getCell(COL_BUCKET)
   bucketTotalCell.value = ''
   applyTotalStyle(bucketTotalCell)
+
+  // Col 21 — fator IBS total (vazio; média de fatores não faz sentido)
+  const fatorTotalCell = totalRow.getCell(COL_FATOR_IBS)
+  fatorTotalCell.value = ''
+  applyTotalStyle(fatorTotalCell)
 }
 
 // ─── Apuração Geral ─────────────────────────────────────────────────────────
@@ -460,12 +487,34 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
  * Função pura: monta o Workbook completo a partir do estado, sem efeitos
  * colaterais de browser (download, blob, etc.). Útil para testes node:test.
  */
+function addLeiaMe(wb: ExcelJS.Workbook) {
+  const ws = wb.addWorksheet(SHEET_LEIAME)
+  ws.getColumn(1).width = 22
+  ws.getColumn(2).width = 60
+
+  ws.mergeCells('A1:B1')
+  const titleCell = ws.getCell('A1')
+  titleCell.value = 'Exportação — Simulador Arval'
+  titleCell.font = { bold: true, size: 14, color: CLR_WHITE }
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: CLR_TITLE }
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+  ws.getRow(1).height = 26
+
+  ws.getCell('A2').value = 'Versão'
+  ws.getCell('A2').font = { bold: true }
+  ws.getCell('B2').value = TEMPLATE_VERSION
+
+  ws.getCell('A3').value = 'Gerado em'
+  ws.getCell('A3').font = { bold: true }
+  ws.getCell('B3').value = new Date().toISOString().slice(0, 10)
+}
+
 export function buildWorkbook(estado: Estado): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook()
   wb.creator = 'Simulador Arval'
   wb.created = new Date()
 
-  // Sheet order: Apuração Geral first, then detail sheets
+  addLeiaMe(wb)
   addApuracaoGeral(wb, estado)
 
   addDetailSheet(wb, 'Rec. Locação', [

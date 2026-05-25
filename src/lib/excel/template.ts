@@ -1,7 +1,8 @@
 import ExcelJS from 'exceljs'
-import { ALIQUOTAS_POR_ANO, ANOS, OPERACOES } from '@/lib/simulador'
+import { ALIQUOTAS_POR_ANO, ANOS, OPERACOES, regraVendaAtivo } from '@/lib/simulador'
 import {
   COL_BUCKET,
+  COL_FATOR_IBS,
   COLS_EDITAVEIS,
   HEADERS,
   SHEETS_DETALHE,
@@ -112,9 +113,10 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
   ws.getColumn(2).width = 20
   for (let i = 3; i <= 19; i++) ws.getColumn(i).width = 16
   ws.getColumn(COL_BUCKET).width = 18
+  ws.getColumn(COL_FATOR_IBS).width = 12
 
   ws.getRow(1).height = 22
-  ws.mergeCells('A1:T1')
+  ws.mergeCells('A1:U1')
   const titleCell = ws.getCell('A1')
   titleCell.value = sheetNome.toUpperCase()
   applyTitle(titleCell)
@@ -192,6 +194,20 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
         bucketCell.value = '—'
         fillLocked(bucketCell)
       }
+      // Col 21 — Fator IBS (sempre derivado de bucket × ano; locked)
+      const fatorCell = row.getCell(COL_FATOR_IBS)
+      if (opKey === 'venda_ativo') {
+        const regra = regraVendaAtivo('2024-2026', ano)
+        if (regra.aplicaProtecaoIBS) {
+          fatorCell.value = regra.fatorVLA_IBS
+          fatorCell.numFmt = '0.00'
+        } else {
+          fatorCell.value = '—'
+        }
+      } else {
+        fatorCell.value = '—'
+      }
+      fillLocked(fatorCell)
       rowNum++
     }
   }
@@ -203,7 +219,7 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
   applyTotalStyle(totalRow.getCell(1))
   totalRow.getCell(2).value = ''
   applyTotalStyle(totalRow.getCell(2))
-  for (let c = 3; c <= COL_BUCKET; c++) {
+  for (let c = 3; c <= COL_FATOR_IBS; c++) {
     const cell = totalRow.getCell(c)
     if (isAliqCol(c)) {
       cell.value = ''
@@ -215,7 +231,7 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
       } else {
         cell.value = '—'
       }
-    } else if (c === COL_BUCKET) {
+    } else if (c === COL_BUCKET || c === COL_FATOR_IBS) {
       cell.value = ''
     } else {
       cell.value = 0
