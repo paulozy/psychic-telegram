@@ -16,9 +16,8 @@ async function importBuffer(buf: ArrayBuffer | Buffer): Promise<ImportResult> {
 }
 
 /**
- * Helper: monta um workbook válido (com Apuração Geral + sheets de detalhe) e
- * retorna o buffer. A planilha resultante não tem sheet "Leia-me" (caminho 'export'),
- * mas é aceita pelo import. Pode ser modificada in-place antes de re-serializar.
+ * Helper: monta um workbook válido completo (Leia-me + Apuração Geral + sheets de detalhe).
+ * Pode ser modificado in-place antes de re-serializar para simular cenários de erro.
  */
 async function buildBaseWorkbook() {
   let estado = estadoInicial()
@@ -59,9 +58,8 @@ describe('XLSX import — cenários de erro', () => {
   })
 
   test('versão desconhecida no Leia-me: rejeita import', async () => {
-    // buildWorkbook não cria Leia-me, então criamos manualmente
     const wb = await buildBaseWorkbook()
-    const leiaMe = wb.addWorksheet('Leia-me')
+    const leiaMe = wb.getWorksheet('Leia-me')!
     leiaMe.getCell('B2').value = 'arval-template-v99'
 
     const buf = await wb.xlsx.writeBuffer()

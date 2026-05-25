@@ -221,15 +221,15 @@ describe('calcularOp — VLA na venda de ativo (defeito #2)', () => {
   })
 })
 
-describe('XLSX import — backward compat VLA (F1)', () => {
+describe('venda_ativo: comportamento de redução de base (VLA)', () => {
   // Estes testes simulam a sequência que importarXlsx executa após parsear a planilha:
   // atualizarValor(...) seguido de atualizarReducaoBase(...) condicionalmente.
 
-  test('v1 sem VLA: comportamento equivalente a vla=0 (tributação cheia)', () => {
+  test('sem VLA informado: comportamento equivalente a vla=0 (tributação cheia)', () => {
     let estado = estadoInicial()
     // Simula reconstrução de uma linha v1 (sem vla undefined no RowParsed)
     estado = atualizarValor(estado, 2030, 'venda_ativo', 200_000)
-    // NÃO chama atualizarReducaoBase — emulando ausência da coluna VLA na planilha v1
+    // NÃO chama atualizarReducaoBase — emulando VLA ausente
 
     const d = estado[2030].venda_ativo
     assert.equal(d.reducaoBase, 0, 'reducaoBase permanece 0 quando não informado')
@@ -238,7 +238,7 @@ describe('XLSX import — backward compat VLA (F1)', () => {
       `valCbs = ${d.valCbs}, esperado ${200_000 * 0.085}`)
   })
 
-  test('v2 com VLA informado: tributa só o excedente', () => {
+  test('com VLA informado: tributa só o excedente (regime protegido)', () => {
     let estado = estadoInicial()
     estado = atualizarValor(estado, 2030, 'venda_ativo', 200_000)
     estado = atualizarReducaoBase(estado, 2030, 'venda_ativo', 150_000)  // como o importer faria

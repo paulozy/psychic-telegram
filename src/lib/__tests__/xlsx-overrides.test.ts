@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
+import type ExcelJS from 'exceljs'
 import {
   OPERACOES,
   aplicarAliquotasGlobais,
@@ -11,6 +12,7 @@ import {
 } from '../simulador.ts'
 import { buildWorkbook } from '../exportXlsx.ts'
 import { importarXlsx } from '../excel/import.ts'
+import { COL_FATOR_IBS } from '../excel/schema.ts'
 import type { Estado } from '../../types/simulador.ts'
 
 const APROX = 1e-6
@@ -99,5 +101,35 @@ describe('XLSX round-trip — overrides do usuário', () => {
     assert.equal(importado[2030].rec_locacao.aliqCbs, 12.34)
     // Outras operações 2030 mantêm default (não foram tocadas)
     assert.equal(importado[2030].cred_serv.aliqCbs, 8.50)
+  })
+
+  test('Fator IBS aparece na sheet "Ativo" com proteção (bucket 2030 × ano 2031 → 0,8)', async () => {
+    let original = estadoInicial()
+    original = atualizarValor(original, 2031, 'venda_ativo', 100_000)
+    original = atualizarReducaoBase(original, 2031, 'venda_ativo', 60_000)
+    original = atualizarBucketAquisicao(original, 2031, '2030')
+
+    const wb = buildWorkbook(original)
+    const ws = wb.getWorksheet('Ativo')!
+    let row: ExcelJS.Row | null = null
+    ws.eachRow((r) => {
+      if (r.getCell(1).value === 2031 && r.getCell(2).value === 'Venda Ativo') row = r
+    })
+    assert.ok(row, 'linha venda_ativo 2031 deve existir')
+    assert.equal(row!.getCell(COL_FATOR_IBS).value, 0.8, 'fator IBS deve ser 0,8')
+  })
+
+  test('Fator IBS "—" quando sem proteção (bucket pre-jul-2024)', async () => {
+    let original = estadoInicial()
+    original = atualizarValor(original, 2031, 'venda_ativo', 100_000)
+    original = atualizarBucketAquisicao(original, 2031, 'pre-jul-2024')
+
+    const wb = buildWorkbook(original)
+    const ws = wb.getWorksheet('Ativo')!
+    let row: ExcelJS.Row | null = null
+    ws.eachRow((r) => {
+      if (r.getCell(1).value === 2031 && r.getCell(2).value === 'Venda Ativo') row = r
+    })
+    assert.equal(row!.getCell(COL_FATOR_IBS).value, '—', 'fator IBS deve ser "—"')
   })
 })
