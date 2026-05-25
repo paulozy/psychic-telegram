@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useState } from 'react'
 import { Topbar } from './Topbar'
 import { PainelEsquerdo } from './PainelEsquerdo'
@@ -28,16 +28,6 @@ export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
   // v6: 4ª rodada Arval — venda_ativo unificado com bucketAquisicao (art. 406 LC 214/2025).
   const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v6', estadoBase)
-
-  // Cleanup de chaves antigas (executa uma vez por sessão; idempotente).
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v5')
-      localStorage.removeItem('arval-simulador-v4')
-      localStorage.removeItem('arval-simulador-v3')
-      localStorage.removeItem('arval-simulador-v2')
-    }
-  }, [])
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
@@ -87,8 +77,6 @@ export function Simulador() {
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('arval-simulador-v6')
-      localStorage.removeItem('arval-simulador-v5')
-      localStorage.removeItem('arval-simulador-v2')
     }
     setEstado(estadoInicial())
     showToast('Dados limpos')
@@ -147,8 +135,6 @@ export function Simulador() {
   const handleLimparExemplo = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('arval-simulador-v6')
-      localStorage.removeItem('arval-simulador-v5')
-      localStorage.removeItem('arval-simulador-v2')
     }
     setEstado(estadoInicial())
   }, [setEstado])

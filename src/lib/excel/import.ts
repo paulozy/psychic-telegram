@@ -20,9 +20,6 @@ import {
   SHEETS_DETALHE,
   SHEET_LEIAME,
   TEMPLATE_VERSION,
-  TEMPLATE_VERSION_V1,
-  TEMPLATE_VERSION_V2,
-  TEMPLATE_VERSION_V3,
   type SheetDetalhe,
 } from './schema.ts'
 
@@ -35,8 +32,6 @@ export interface ImportError {
 export type ImportResult =
   | { ok: true; estado: Estado; mudancas: number }
   | { ok: false; errors: ImportError[] }
-
-const SHEET_APURACAO = 'Apuração Geral'
 
 function colLetter(col: number): string {
   let s = ''
@@ -165,12 +160,7 @@ function parseDetalheSheet(
     }
 
     const opLabel = readString(row.getCell(colOp).value)
-    // Backward compat XLSX v3: labels "Venda Ativo (pré-2026)" e "Venda Ativo (pós-2026)" mapeiam para "Venda Ativo".
-    // Mantemos o label original para inferir o bucket default na leitura.
-    const ehVendaPre = opLabel === 'Venda Ativo (pré-2026)'
-    const ehVendaPos = opLabel === 'Venda Ativo (pós-2026)'
-    const labelNormalizado = (ehVendaPre || ehVendaPos) ? 'Venda Ativo' : opLabel
-    const op = opsValidos.find(o => o.label === labelNormalizado)
+    const op = opsValidos.find(o => o.label === opLabel)
     if (!op) {
       errors.push({
         sheet: sd.nome,
@@ -225,19 +215,18 @@ function parseDetalheSheet(
     }
     if (aliqErro) continue
 
-    // VLA é opcional (templates v1 não têm essa coluna; só venda_ativo usa)
+    // VLA: só venda_ativo usa.
     let reducaoBase: number | undefined = undefined
     const colVla = headerMap['VLA']
     if (colVla !== undefined && op.key === 'venda_ativo') {
       const vlaRaw = row.getCell(colVla).value
-      // Célula com "—" ou texto não numérico vira null em readNumber; aceitamos como ausente.
       const vlaNum = readNumber(vlaRaw)
       if (vlaNum !== null && vlaNum >= 0) {
         reducaoBase = vlaNum
       }
     }
 
-    // Bucket de aquisição: lido da coluna v4 OU inferido do label v3.
+    // Bucket de aquisição: só venda_ativo (coluna obrigatória no v5).
     let bucketAquisicao: BucketAquisicao | undefined = undefined
     if (op.key === 'venda_ativo') {
       const colBucket = headerMap['Bucket aquisição']
@@ -247,11 +236,6 @@ function parseDetalheSheet(
           bucketAquisicao = bucketStr as BucketAquisicao
         }
       }
-      // Backward compat v3: pré-2026 → '2024-2026', pós-2026 → '2027-2028'
-      if (bucketAquisicao === undefined) {
-        if (ehVendaPre) bucketAquisicao = '2024-2026'
-        else if (ehVendaPos) bucketAquisicao = '2027-2028'
-      }
     }
 
     rows.push({ ano, opKey: op.key, valor, reducaoBase, bucketAquisicao, aliquotas })
@@ -260,26 +244,21 @@ function parseDetalheSheet(
   return rows
 }
 
-function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v1' | 'template-v2' | 'template-v3' | 'template-v4' | 'export' | 'invalido' {
+function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v5' | 'invalido' {
   const leiaMe = wb.getWorksheet(SHEET_LEIAME)
-  if (leiaMe) {
-    const versao = readString(leiaMe.getCell('B2').value)
-    if (versao === TEMPLATE_VERSION) return 'template-v4'
-    if (versao === TEMPLATE_VERSION_V3) return 'template-v3'
-    if (versao === TEMPLATE_VERSION_V2) return 'template-v2'
-    if (versao === TEMPLATE_VERSION_V1) return 'template-v1'
+  if (!leiaMe) {
     errors.push({
       sheet: SHEET_LEIAME,
-      cell: 'B2',
-      reason: `Versão de template incompatível: "${versao || '(vazio)'}". Aceitos: ${TEMPLATE_VERSION}, ${TEMPLATE_VERSION_V3}, ${TEMPLATE_VERSION_V2}, ${TEMPLATE_VERSION_V1}`,
+      reason: `Sheet "${SHEET_LEIAME}" não encontrada — arquivo não parece ser um template válido`,
     })
     return 'invalido'
   }
-  // Sem Leia-me: aceita se for um arquivo exportado (tem Apuração Geral)
-  if (wb.getWorksheet(SHEET_APURACAO)) return 'export'
+  const versao = readString(leiaMe.getCell('B2').value)
+  if (versao === TEMPLATE_VERSION) return 'template-v5'
   errors.push({
     sheet: SHEET_LEIAME,
-    reason: `Sheet "${SHEET_LEIAME}" não encontrada — arquivo não parece ser um template válido`,
+    cell: 'B2',
+    reason: `Versão de template incompatível: "${versao || '(vazio)'}". Aceito: ${TEMPLATE_VERSION}`,
   })
   return 'invalido'
 }
