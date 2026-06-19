@@ -417,6 +417,10 @@ export function buildWorkbook(estado: Estado): ExcelJS.Workbook {
     { key: 'rec_locacao', label: OPERACOES.find(o => o.key === 'rec_locacao')!.label },
   ], estado)
 
+  addDetailSheet(wb, 'Outras Receitas', [
+    { key: 'outras_receitas', label: OPERACOES.find(o => o.key === 'outras_receitas')!.label },
+  ], estado)
+
   addDetailSheet(wb, 'Receita Financeira', [
     { key: 'receita_financeira', label: OPERACOES.find(o => o.key === 'receita_financeira')!.label },
   ], estado)

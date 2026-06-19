@@ -8,10 +8,12 @@
  * Limite ≤150 caracteres por tooltip — estrutura "Definição. Regra/contexto."
  */
 
-/** Tooltips das 7 operações em OPERACOES (src/lib/simulador.ts:3-11). */
+/** Tooltips das operações em OPERACOES (src/lib/simulador.ts:3+). */
 export const TOOLTIPS_OPERACAO: Record<string, string> = {
   rec_locacao:
     'Receita de locação de frota — atividade-fim. Regime padrão CBS/IBS após 2026; sem regime específico na LC 214/2025.',
+  outras_receitas:
+    'Demais receitas tributadas no regime padrão, calculadas como a Rec. Locação (PIS/COFINS em 2026, CBS/IBS a partir de 2027).',
   receita_financeira:
     'Juros, dividendos e ganhos de aplicações. Fora da base de CBS/IBS para empresa não-financeira (LC 214/2025 art. 181+).',
   venda_ativo:

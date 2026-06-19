@@ -2,6 +2,7 @@ import type { ApuracaoAno, BucketAquisicao, DadosOperacao, Estado, Operacao } fr
 
 export const OPERACOES: Operacao[] = [
   { key: 'rec_locacao',         label: 'Rec. Locação',         tipo: 'debito',  categoria: 'padrao'    },
+  { key: 'outras_receitas',     label: 'Outras Receitas',      tipo: 'debito',  categoria: 'padrao'    },
   { key: 'receita_financeira',  label: 'Receita Financeira',   tipo: 'debito',  categoria: 'fora_base' },
   { key: 'venda_ativo',         label: 'Venda Ativo',          tipo: 'debito',  categoria: 'padrao'    },
   { key: 'cred_serv',           label: 'Serv. Tomados',        tipo: 'credito' },
@@ -140,6 +141,12 @@ export const ALIQUOTAS_POR_ANO: Record<number, Record<string, AliquotaOp>> = {
     cred_deprec:  { aliqPis: 0, aliqCof: 0, aliqCbs: 0,     aliqIbsE: 0,     aliqIbsM: 0    },
     cred_juros:   { aliqPis: 0, aliqCof: 0, aliqCbs: 12.50, aliqIbsE: 16.00, aliqIbsM: 2.50 },
   },
+}
+
+// "Outras Receitas" é um clone tributário da Rec. Locação: replica as alíquotas dela
+// em todos os anos. Mantido derivado (não duplicado) para nunca sair de sincronia.
+for (const ano of ANOS) {
+  ALIQUOTAS_POR_ANO[ano].outras_receitas = { ...ALIQUOTAS_POR_ANO[ano].rec_locacao }
 }
 
 // ─── Estado inicial ─────────────────────────────────────────────────────────

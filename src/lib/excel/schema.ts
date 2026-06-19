@@ -1,6 +1,6 @@
 import type { DadosOperacao } from '@/types/simulador'
 
-export const TEMPLATE_VERSION = 'arval-template-v5'
+export const TEMPLATE_VERSION = 'arval-template-v6'
 
 export const SHEET_LEIAME = 'Leia-me'
 
@@ -11,6 +11,7 @@ export interface SheetDetalhe {
 
 export const SHEETS_DETALHE: SheetDetalhe[] = [
   { nome: 'Rec. Locação',       ops: ['rec_locacao'] },
+  { nome: 'Outras Receitas',    ops: ['outras_receitas'] },
   { nome: 'Receita Financeira', ops: ['receita_financeira'] },
   { nome: 'Ativo',              ops: ['venda_ativo', 'compra_ativo'] },
   { nome: 'Serv. Tomados',      ops: ['cred_serv'] },
