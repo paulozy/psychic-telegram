@@ -231,47 +231,7 @@ export function calcularOp(
   }
 }
 
-export function totalOp(d: DadosOperacao): number {
-  return d.valPis + d.valCof + d.valCbs + d.valIbsE + d.valIbsM
-}
-
 // ─── Agregações ──────────────────────────────────────────────────────────────
-
-export function resultadoAno(estado: Estado, ano: number): number {
-  let deb = 0, cred = 0
-  OPERACOES.forEach(op => {
-    const t = totalOp(estado[ano][op.key])
-    if (op.tipo === 'debito') deb += t
-    else cred += t
-  })
-  return deb - cred
-}
-
-export function resumoAno(estado: Estado, ano: number) {
-  let receita = 0
-  let tributos = 0
-  OPERACOES.forEach(op => {
-    const d = estado[ano][op.key]
-    if (op.tipo === 'debito') receita += d.valor
-    tributos += d.valPis + d.valCof + d.valCbs + d.valIbsE + d.valIbsM
-  })
-  const margem = receita > 0 ? (tributos / receita) * 100 : 0
-  return { receita, tributos, margem }
-}
-
-/** Totais brutos de cada tributo no ano — usado no painel de carga tributária. */
-export function resumoTributosBrutos(estado: Estado, ano: number) {
-  let pis = 0, cof = 0, cbs = 0, ibsE = 0, ibsM = 0
-  OPERACOES.forEach(op => {
-    const d = estado[ano][op.key]
-    pis  += d.valPis
-    cof  += d.valCof
-    cbs  += d.valCbs
-    ibsE += d.valIbsE
-    ibsM += d.valIbsM
-  })
-  return { pis, cof, cbs, ibsE, ibsM, total: pis + cof + cbs + ibsE + ibsM }
-}
 
 /** Apuração de tributos com débito/crédito/saldo separados por tributo conforme LC 214/2025. */
 export function apurarAno(estado: Estado, ano: number): ApuracaoAno {

@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { Estado } from '@/types/simulador'
-import { ANOS, OPERACOES, regraVendaAtivo } from './simulador.ts'
+import { ANOS, OPERACOES, apurarAno, regraVendaAtivo } from './simulador.ts'
 import {
   COL_BUCKET,
   COL_FATOR_IBS,
@@ -249,236 +249,132 @@ function addDetailSheet(
 
 // ─── Apuração Geral ─────────────────────────────────────────────────────────
 
+/**
+ * Escreve uma tabela (anos nas linhas) com cabeçalho de seção, linha de cabeçalho,
+ * dados e uma linha TOTAL. Coluna 0 = Ano (numérica); demais colunas = moeda.
+ * Retorna o índice da próxima linha livre (já com um espaçador).
+ */
+function addTabela(
+  ws: ExcelJS.Worksheet,
+  startRow: number,
+  titulo: string,
+  headers: string[],
+  linhas: number[][]
+): number {
+  // Section header
+  const secRow = ws.getRow(startRow)
+  secRow.height = 20
+  ws.mergeCells(startRow, 1, startRow, headers.length)
+  const secCell = ws.getCell(startRow, 1)
+  secCell.value = titulo
+  applySectionStyle(secCell)
+
+  // Column headers
+  const hdrRow = ws.getRow(startRow + 1)
+  hdrRow.height = 30
+  headers.forEach((h, i) => {
+    const cell = hdrRow.getCell(i + 1)
+    cell.value = h
+    applyHeaderStyle(cell)
+  })
+
+  // Data rows
+  const totals = new Array(headers.length).fill(0)
+  linhas.forEach((linha, ai) => {
+    const row = ws.getRow(startRow + 2 + ai)
+    row.height = 18
+    linha.forEach((v, ci) => {
+      const cell = row.getCell(ci + 1)
+      if (ci === 0) {
+        cell.value = v
+        applyAltFill(cell, ai)
+      } else {
+        setMoney(cell, v, ai)
+        totals[ci] += v
+      }
+    })
+  })
+
+  // TOTAL row
+  const totalRow = ws.getRow(startRow + 2 + linhas.length)
+  totalRow.height = 18
+  totalRow.getCell(1).value = 'TOTAL'
+  applyTotalStyle(totalRow.getCell(1))
+  for (let ci = 1; ci < headers.length; ci++) {
+    const cell = totalRow.getCell(ci + 1)
+    cell.value = totals[ci]
+    cell.numFmt = FMT_MONEY
+    applyTotalStyle(cell)
+  }
+
+  // próxima linha livre + 1 espaçador
+  return startRow + 3 + linhas.length + 1
+}
+
+/**
+ * Aba "Apuração Geral": deriva tudo de `apurarAno` (saldo = débito − crédito por
+ * tributo, com Math.max(0, saldo) no total a pagar). As colunas por operação das
+ * seções DÉBITOS/CRÉDITOS são dirigidas por `OPERACOES`, então novas operações
+ * aparecem automaticamente.
+ */
 function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
   const ws = wb.addWorksheet('Apuração Geral')
 
+  const opsDebito  = OPERACOES.filter(o => o.tipo === 'debito')
+  const opsCredito = OPERACOES.filter(o => o.tipo === 'credito')
+
+  const debHeaders = [
+    'Ano', ...opsDebito.map(o => o.label), 'Total Débitos',
+    'PIS Déb.', 'COFINS Déb.', 'CBS Déb.', 'IBS Est. Déb.', 'IBS Mun. Déb.', 'Total Trib. Déb.',
+  ]
+  const credHeaders = [
+    'Ano', ...opsCredito.map(o => o.label), 'Total Créditos',
+    'PIS Créd.', 'COFINS Créd.', 'CBS Créd.', 'IBS Est. Créd.', 'IBS Mun. Créd.', 'Total Trib. Créd.',
+  ]
+  const resHeaders = [
+    'Ano', 'PIS (saldo)', 'COFINS (saldo)', 'CBS (saldo)', 'IBS (saldo)',
+    'Total a Pagar', 'Saldo Credor',
+  ]
+
+  const debRows = ANOS.map(ano => {
+    const a = apurarAno(estado, ano)
+    const vals = opsDebito.map(o => zero(estado, ano, o.key).valor)
+    const totalVal = vals.reduce((s, v) => s + v, 0)
+    const tribDeb = a.pis.debito + a.cofins.debito + a.cbs.debito + a.ibsE.debito + a.ibsM.debito
+    return [ano, ...vals, totalVal, a.pis.debito, a.cofins.debito, a.cbs.debito, a.ibsE.debito, a.ibsM.debito, tribDeb]
+  })
+  const credRows = ANOS.map(ano => {
+    const a = apurarAno(estado, ano)
+    const vals = opsCredito.map(o => zero(estado, ano, o.key).valor)
+    const totalVal = vals.reduce((s, v) => s + v, 0)
+    const tribCred = a.pis.credito + a.cofins.credito + a.cbs.credito + a.ibsE.credito + a.ibsM.credito
+    return [ano, ...vals, totalVal, a.pis.credito, a.cofins.credito, a.cbs.credito, a.ibsE.credito, a.ibsM.credito, tribCred]
+  })
+  const resRows = ANOS.map(ano => {
+    const a = apurarAno(estado, ano)
+    return [ano, a.pis.saldo, a.cofins.saldo, a.cbs.saldo, a.ibs.saldo, a.totalAPagar, a.saldoCredor]
+  })
+
+  const maxCols = Math.max(debHeaders.length, credHeaders.length, resHeaders.length)
+
   // Column widths
   ws.getColumn(1).width = 8
-  ws.getColumn(2).width = 20
-  ws.getColumn(3).width = 20
-  ws.getColumn(4).width = 20
-  ws.getColumn(5).width = 20
-  for (let i = 6; i <= 12; i++) ws.getColumn(i).width = 18
+  for (let i = 2; i <= maxCols; i++) ws.getColumn(i).width = 18
 
-  // Row 1 — main title (cols A–H)
+  // Row 1 — main title
   ws.getRow(1).height = 26
-  ws.mergeCells('A1:H1')
-  const titleCell = ws.getCell('A1')
+  ws.mergeCells(1, 1, 1, maxCols)
+  const titleCell = ws.getCell(1, 1)
   titleCell.value = 'CALCULADORA REFORMA TRIBUTÁRIA — ARVAL BRASIL'
   applyTitleStyle(titleCell)
 
-  // Row 2 — empty
+  // Row 2 — empty spacer
   ws.getRow(2).height = 8
 
-  // ── DÉBITOS (row 3 onward) ────────────────────────────────────────────────
-
-  // Row 3 — section header
-  ws.getRow(3).height = 20
-  ws.mergeCells('A3:I3')
-  const debCell = ws.getCell('A3')
-  debCell.value = 'DÉBITOS'
-  applySectionStyle(debCell)
-
-  // Row 4 — column headers for DÉBITOS
-  const debHdrs = [
-    'Ano', 'Rec. Locação', 'Receita Financeira', 'Venda Ativo',
-    'Total Débitos', 'CBS Déb.', 'IBS Est. Déb.', 'IBS Mun. Déb.', 'Total Trib. Déb.',
-  ]
-  const debHdrRow = ws.getRow(4)
-  debHdrRow.height = 30
-  debHdrs.forEach((h, i) => {
-    const cell = debHdrRow.getCell(i + 1)
-    cell.value = h
-    applyHeaderStyle(cell)
-  })
-
-  // Rows 5–12 — débito data
-  const debTotals = new Array(9).fill(0)
-  for (let ai = 0; ai < ANOS.length; ai++) {
-    const ano = ANOS[ai]
-    const rl = zero(estado, ano, 'rec_locacao')
-    const rf = zero(estado, ano, 'receita_financeira')
-    const va = zero(estado, ano, 'venda_ativo')
-    const totalDeb = rl.valor + rf.valor + va.valor
-    const cbsDeb   = rl.valCbs + rf.valCbs + va.valCbs
-    const ibsEDeb  = rl.valIbsE + rf.valIbsE + va.valIbsE
-    const ibsMDeb  = rl.valIbsM + rf.valIbsM + va.valIbsM
-    const tribDeb  = cbsDeb + ibsEDeb + ibsMDeb +
-      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
-
-    const vals = [ano, rl.valor, rf.valor, va.valor, totalDeb, cbsDeb, ibsEDeb, ibsMDeb, tribDeb]
-    const row = ws.getRow(5 + ai)
-    row.height = 18
-    vals.forEach((v, ci) => {
-      const cell = row.getCell(ci + 1)
-      if (ci === 0) {
-        cell.value = v
-        applyAltFill(cell, ai)
-      } else {
-        setMoney(cell, v as number, ai)
-      }
-    })
-    for (let ci = 1; ci < 9; ci++) debTotals[ci] += vals[ci] as number
-  }
-
-  // Row 13 — TOTAL
-  const debTotalRow = ws.getRow(13)
-  debTotalRow.height = 18
-  debTotalRow.getCell(1).value = 'TOTAL'
-  applyTotalStyle(debTotalRow.getCell(1))
-  for (let ci = 1; ci < 9; ci++) {
-    const cell = debTotalRow.getCell(ci + 1)
-    cell.value = debTotals[ci]
-    cell.numFmt = FMT_MONEY
-    applyTotalStyle(cell)
-  }
-
-  // ── CRÉDITOS (row 15 onward) ──────────────────────────────────────────────
-
-  // Row 14 — empty spacer
-  ws.getRow(14).height = 8
-
-  // Row 15 — section header
-  ws.getRow(15).height = 20
-  ws.mergeCells('A15:J15')
-  const credCell = ws.getCell('A15')
-  credCell.value = 'CRÉDITOS'
-  applySectionStyle(credCell)
-
-  // Row 16 — column headers for CRÉDITOS
-  const credHdrs = [
-    'Ano', 'Serv. Tomados', 'Compra Ativo', 'Deprec. Fiscal', 'Juros s/Emp.',
-    'Total Créditos', 'CBS Créd.', 'IBS Est. Créd.', 'IBS Mun. Créd.', 'Total Trib. Créd.',
-  ]
-  const credHdrRow = ws.getRow(16)
-  credHdrRow.height = 30
-  credHdrs.forEach((h, i) => {
-    const cell = credHdrRow.getCell(i + 1)
-    cell.value = h
-    applyHeaderStyle(cell)
-  })
-
-  // Rows 17–24 — crédito data
-  const credTotals = new Array(10).fill(0)
-  for (let ai = 0; ai < ANOS.length; ai++) {
-    const ano = ANOS[ai]
-    const cs = zero(estado, ano, 'cred_serv')
-    const ca = zero(estado, ano, 'compra_ativo')
-    const cd = zero(estado, ano, 'cred_deprec')
-    const cj = zero(estado, ano, 'cred_juros')
-    const totalCred = cs.valor + ca.valor + cd.valor + cj.valor
-    const cbsCred   = cs.valCbs + ca.valCbs + cd.valCbs + cj.valCbs
-    const ibsECred  = cs.valIbsE + ca.valIbsE + cd.valIbsE + cj.valIbsE
-    const ibsMCred  = cs.valIbsM + ca.valIbsM + cd.valIbsM + cj.valIbsM
-    const tribCred  = cbsCred + ibsECred + ibsMCred +
-      cs.valPis + cs.valCof + ca.valPis + ca.valCof +
-      cd.valPis + cd.valCof + cj.valPis + cj.valCof
-
-    const vals = [ano, cs.valor, ca.valor, cd.valor, cj.valor, totalCred, cbsCred, ibsECred, ibsMCred, tribCred]
-    const row = ws.getRow(17 + ai)
-    row.height = 18
-    vals.forEach((v, ci) => {
-      const cell = row.getCell(ci + 1)
-      if (ci === 0) {
-        cell.value = v
-        applyAltFill(cell, ai)
-      } else {
-        setMoney(cell, v as number, ai)
-      }
-    })
-    for (let ci = 1; ci < 10; ci++) credTotals[ci] += vals[ci] as number
-  }
-
-  // Row 25 — TOTAL
-  const credTotalRow = ws.getRow(25)
-  credTotalRow.height = 18
-  credTotalRow.getCell(1).value = 'TOTAL'
-  applyTotalStyle(credTotalRow.getCell(1))
-  for (let ci = 1; ci < 10; ci++) {
-    const cell = credTotalRow.getCell(ci + 1)
-    cell.value = credTotals[ci]
-    cell.numFmt = FMT_MONEY
-    applyTotalStyle(cell)
-  }
-
-  // ── RESULTADO (row 27 onward) ─────────────────────────────────────────────
-
-  // Row 26 — empty spacer
-  ws.getRow(26).height = 8
-
-  // Row 27 — section header
-  ws.getRow(27).height = 20
-  ws.mergeCells('A27:E27')
-  const resCell = ws.getCell('A27')
-  resCell.value = 'RESULTADO'
-  applySectionStyle(resCell)
-
-  // Row 28 — column headers for RESULTADO
-  const resHdrs = ['Ano', 'CBS Líquido', 'IBS Est. Líquido', 'IBS Mun. Líquido', 'Total Trib. Líquido']
-  const resHdrRow = ws.getRow(28)
-  resHdrRow.height = 30
-  resHdrs.forEach((h, i) => {
-    const cell = resHdrRow.getCell(i + 1)
-    cell.value = h
-    applyHeaderStyle(cell)
-  })
-
-  // Rows 29–36 — resultado data
-  const resTotals = new Array(5).fill(0)
-  for (let ai = 0; ai < ANOS.length; ai++) {
-    const ano = ANOS[ai]
-
-    // Débitos
-    const rl = zero(estado, ano, 'rec_locacao')
-    const rf = zero(estado, ano, 'receita_financeira')
-    const va = zero(estado, ano, 'venda_ativo')
-    const cbsDeb  = rl.valCbs + rf.valCbs + va.valCbs +
-      rl.valPis + rl.valCof + rf.valPis + rf.valCof + va.valPis + va.valCof
-    const ibsEDeb = rl.valIbsE + rf.valIbsE + va.valIbsE
-    const ibsMDeb = rl.valIbsM + rf.valIbsM + va.valIbsM
-
-    // Créditos
-    const cs = zero(estado, ano, 'cred_serv')
-    const ca = zero(estado, ano, 'compra_ativo')
-    const cd = zero(estado, ano, 'cred_deprec')
-    const cj = zero(estado, ano, 'cred_juros')
-    const cbsCred  = cs.valCbs + ca.valCbs + cd.valCbs + cj.valCbs +
-      cs.valPis + cs.valCof + ca.valPis + ca.valCof +
-      cd.valPis + cd.valCof + cj.valPis + cj.valCof
-    const ibsECred = cs.valIbsE + ca.valIbsE + cd.valIbsE + cj.valIbsE
-    const ibsMCred = cs.valIbsM + ca.valIbsM + cd.valIbsM + cj.valIbsM
-
-    const cbsLiq  = cbsDeb  - cbsCred
-    const ibsELiq = ibsEDeb - ibsECred
-    const ibsMLiq = ibsMDeb - ibsMCred
-    const totalLiq = cbsLiq + ibsELiq + ibsMLiq
-
-    const vals = [ano, cbsLiq, ibsELiq, ibsMLiq, totalLiq]
-    const row = ws.getRow(29 + ai)
-    row.height = 18
-    vals.forEach((v, ci) => {
-      const cell = row.getCell(ci + 1)
-      if (ci === 0) {
-        cell.value = v
-        applyAltFill(cell, ai)
-      } else {
-        setMoney(cell, v as number, ai)
-      }
-    })
-    for (let ci = 1; ci < 5; ci++) resTotals[ci] += vals[ci] as number
-  }
-
-  // Row 37 — TOTAL
-  const resTotalRow = ws.getRow(37)
-  resTotalRow.height = 18
-  resTotalRow.getCell(1).value = 'TOTAL'
-  applyTotalStyle(resTotalRow.getCell(1))
-  for (let ci = 1; ci < 5; ci++) {
-    const cell = resTotalRow.getCell(ci + 1)
-    cell.value = resTotals[ci]
-    cell.numFmt = FMT_MONEY
-    applyTotalStyle(cell)
-  }
+  let next = 3
+  next = addTabela(ws, next, 'DÉBITOS', debHeaders, debRows)
+  next = addTabela(ws, next, 'CRÉDITOS', credHeaders, credRows)
+  addTabela(ws, next, 'RESULTADO', resHeaders, resRows)
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────

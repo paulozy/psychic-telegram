@@ -1,7 +1,13 @@
 'use client'
 
-import { ANOS, resultadoAno, fmtCompacto } from '@/lib/simulador'
+import { ANOS, apurarAno, fmtCompacto } from '@/lib/simulador'
 import type { Estado } from '@/types/simulador'
+
+/** Resultado do ano na convenção da barra: positivo = crédito a tomar, negativo = a pagar. */
+function resultadoLiquido(estado: Estado, ano: number): number {
+  const a = apurarAno(estado, ano)
+  return a.saldoCredor - a.totalAPagar
+}
 
 interface ResultadoBarProps {
   estado: Estado
@@ -14,9 +20,9 @@ export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) 
     <div className="resultado-bar" data-tour="resultado-bar">
       {ANOS.map((ano, idx) => {
         // Convenção: positivo = crédito a tomar, negativo = a pagar.
-        const res = -resultadoAno(estado, ano)
+        const res = resultadoLiquido(estado, ano)
         const anoAnterior = idx > 0 ? ANOS[idx - 1] : null
-        const resAnterior = anoAnterior ? -resultadoAno(estado, anoAnterior) : null
+        const resAnterior = anoAnterior ? resultadoLiquido(estado, anoAnterior) : null
 
         let pctStr = ''
         let pctClass = ''

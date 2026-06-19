@@ -1,6 +1,6 @@
 'use client'
 
-import { OPERACOES, fmtBR, fmtCompacto } from '@/lib/simulador'
+import { OPERACOES, apurarAno, fmtBR, fmtCompacto } from '@/lib/simulador'
 import { NumberInputBR } from './NumberInputBR'
 import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO, TOOLTIPS_TRIBUTO } from '@/lib/tooltips'
 import type { Estado, DadosOperacao } from '@/types/simulador'
@@ -72,15 +72,12 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
     badgeLabel = !is2026 ? cfg.badgeLabel : 'não aplicável em 2026'
   }
 
-  // Total do card
-  let total = 0
-  OPERACOES.forEach(op => {
-    const d = estado[ano][op.key]
-    if (tributo === 'pis')    total += d.valPis
-    if (tributo === 'cofins') total += d.valCof
-    if (tributo === 'cbs')    total += d.valCbs
-    if (tributo === 'ibs')    total += d.valIbsE + d.valIbsM
-  })
+  // Total do card: saldo líquido (débito − crédito) da apuração não-cumulativa,
+  // consistente com apurarAno. Positivo = a recolher; negativo = saldo credor.
+  const saldo = apurarAno(estado, ano)[tributo].saldo
+  const saldoStr = saldo !== 0
+    ? (saldo < 0 ? '−R$ ' : 'R$ ') + fmtBR(Math.abs(saldo))
+    : '—'
 
   const tooltipTributo = TOOLTIPS_TRIBUTO[tributo]
 
@@ -100,7 +97,7 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
           {cfg.label}
           <span className={`tc-badge ${badgeClass}`}>{badgeLabel}</span>
         </span>
-        <span className="tc-total">{total > 0 ? 'R$ ' + fmtBR(total) : '—'}</span>
+        <span className="tc-total">{saldoStr}</span>
       </div>
 
       {/* Header colunas */}
