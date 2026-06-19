@@ -144,7 +144,11 @@ export function PainelEsquerdo({
                     </small>
                   )}
                   {d.valor > 0 && d.reducaoBase > d.valor && (
-                    <small className="rec-base-erro">Redução excede o valor</small>
+                    op.key === 'venda_ativo' ? (
+                      <small className="rec-base-aviso">Custo de aquisição acima do valor de venda</small>
+                    ) : (
+                      <small className="rec-base-erro">Redução excede o valor</small>
+                    )
                   )}
                 </>
               )}
