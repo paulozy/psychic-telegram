@@ -45,9 +45,9 @@ test.describe('XLSX — round-trip Export → Import', () => {
   })
 
   test('importar XLSX com versão desconhecida exibe erro no modal', async ({ page }) => {
-    // Construir XLSX com versão inválida
+    // Construir XLSX e corromper a versão na sheet Leia-me já existente
     const wb = buildWorkbook(estadoInicial())
-    const leiaMe = wb.addWorksheet('Leia-me')
+    const leiaMe = wb.getWorksheet('Leia-me')!
     leiaMe.getCell('B2').value = 'arval-template-v99'
     const buffer = await wb.xlsx.writeBuffer()
 
@@ -95,7 +95,7 @@ test.describe('XLSX — round-trip Export → Import', () => {
     await download.saveAs(xlsxPath)
 
     // 5. Limpar e re-importar
-    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v5'))
+    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v6'))
     await page.reload()
     await page.locator('input[type="file"]').setInputFiles(xlsxPath)
     await expect(page.locator('.modal-backdrop')).toBeVisible({ timeout: 5_000 })
@@ -125,7 +125,7 @@ test.describe('XLSX — round-trip Export → Import', () => {
     await download.saveAs(xlsxPath)
 
     // 2. Limpar localStorage e recarregar (mais robusto que botão Limpar)
-    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v5'))
+    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v6'))
     await page.reload()
     await expect(page.locator('[data-tour="ano-tabs"]')).toBeVisible()
 

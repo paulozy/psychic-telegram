@@ -55,12 +55,12 @@ test.describe('Cenários canônicos — validação UI', () => {
 })
 
 test.describe('Cenários canônicos — checagens visuais', () => {
-  test('cenário 2 baseline: localStorage v4 persiste após seed', async ({ page }) => {
+  test('cenário 2 baseline: localStorage v6 persiste após seed', async ({ page }) => {
     const cenario = CENARIOS.find(c => c.nome === '2-mid-2030')!
     await seedScenario(page, cenario)
 
     // Confirma que o seed foi aplicado — o JSON do estado está no localStorage.
-    const stored = await page.evaluate(() => window.localStorage.getItem('arval-simulador-v5'))
+    const stored = await page.evaluate(() => window.localStorage.getItem('arval-simulador-v6'))
     expect(stored).toBeTruthy()
     expect(stored!.length).toBeGreaterThan(100)  // JSON não-trivial
 
