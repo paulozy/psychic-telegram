@@ -60,7 +60,7 @@ test.describe('Cenários canônicos — checagens visuais', () => {
     await seedScenario(page, cenario)
 
     // Confirma que o seed foi aplicado — o JSON do estado está no localStorage.
-    const stored = await page.evaluate(() => window.localStorage.getItem('arval-simulador-v6'))
+    const stored = await page.evaluate(() => window.localStorage.getItem('arval-simulador-v7'))
     expect(stored).toBeTruthy()
     expect(stored!.length).toBeGreaterThan(100)  // JSON não-trivial
 

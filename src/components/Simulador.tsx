@@ -26,8 +26,10 @@ import type { BucketAquisicao, Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
-  // v6: 4ª rodada Arval — venda_ativo unificado com bucketAquisicao (art. 406 LC 214/2025).
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v6', estadoBase)
+  // v7: adiciona operação "outras_receitas" a OPERACOES. Bump descarta estados v6
+  // antigos que não têm a chave (evita crash em apurarAno). Sem backward-compat:
+  // qualquer mudança em OPERACOES/schema do estado DEVE bumpar esta versão.
+  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v7', estadoBase)
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
@@ -76,7 +78,7 @@ export function Simulador() {
 
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v6')
+      localStorage.removeItem('arval-simulador-v7')
     }
     setEstado(estadoInicial())
     showToast('Dados limpos')
@@ -134,7 +136,7 @@ export function Simulador() {
 
   const handleLimparExemplo = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v6')
+      localStorage.removeItem('arval-simulador-v7')
     }
     setEstado(estadoInicial())
   }, [setEstado])

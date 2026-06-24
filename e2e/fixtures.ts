@@ -32,7 +32,7 @@ export async function seedScenario(page: Page, cenario: Cenario) {
   const json = JSON.stringify(estado)
 
   await page.addInitScript(payload => {
-    window.localStorage.setItem('arval-simulador-v6', payload)
+    window.localStorage.setItem('arval-simulador-v7', payload)
   }, json)
 
   await page.goto('/')

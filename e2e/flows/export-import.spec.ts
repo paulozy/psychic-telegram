@@ -95,7 +95,7 @@ test.describe('XLSX — round-trip Export → Import', () => {
     await download.saveAs(xlsxPath)
 
     // 5. Limpar e re-importar
-    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v6'))
+    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v7'))
     await page.reload()
     await page.locator('input[type="file"]').setInputFiles(xlsxPath)
     await expect(page.locator('.modal-backdrop')).toBeVisible({ timeout: 5_000 })
@@ -125,7 +125,7 @@ test.describe('XLSX — round-trip Export → Import', () => {
     await download.saveAs(xlsxPath)
 
     // 2. Limpar localStorage e recarregar (mais robusto que botão Limpar)
-    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v6'))
+    await page.evaluate(() => window.localStorage.removeItem('arval-simulador-v7'))
     await page.reload()
     await expect(page.locator('[data-tour="ano-tabs"]')).toBeVisible()
 
