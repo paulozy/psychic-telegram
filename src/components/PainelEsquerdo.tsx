@@ -1,6 +1,7 @@
 'use client'
 
-import { BUCKETS_AQUISICAO, OPERACOES, ANOS, hasData, fmtBR } from '@/lib/simulador'
+import { BUCKETS_AQUISICAO, OPERACOES, ANOS, hasData, fmtBR, breakdownBaseEfetiva, breakdownOperacoesTotais } from '@/lib/simulador'
+import { CalcPopover } from './CalcPopover'
 import { NumberInputBR } from './NumberInputBR'
 import { PainelAliquotas } from './PainelAliquotas'
 import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO } from '@/lib/tooltips'
@@ -141,6 +142,10 @@ export function PainelEsquerdo({
                   {d.valor > 0 && d.reducaoBase <= d.valor && (
                     <small className="rec-base-efetiva">
                       Base efetiva: R$ {fmtBR(Math.max(0, d.valor - d.reducaoBase))}
+                      <CalcPopover
+                        breakdown={breakdownBaseEfetiva(estado, anoAtivo, op.key)}
+                        label={`Como é calculada a base efetiva de ${op.label}`}
+                      />
                     </small>
                   )}
                   {d.valor > 0 && d.reducaoBase > d.valor && (
@@ -160,12 +165,22 @@ export function PainelEsquerdo({
       {/* Rodapé totais */}
       <div className="left-footer">
         <div className="ft-row">
-          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalDebitos}>Total débitos</span>
+          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalDebitos}>
+            Total débitos
+            {totalDeb > 0 && (
+              <CalcPopover breakdown={breakdownOperacoesTotais(estado, anoAtivo, 'debito')} label="Como é calculado o total de débitos" />
+            )}
+          </span>
           <span className="ft-val deb">{totalDeb > 0 ? 'R$ ' + fmtBR(totalDeb) : '—'}</span>
         </div>
         <hr className="ft-divider" />
         <div className="ft-row">
-          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalCreditos}>Total créditos</span>
+          <span className="ft-label" title={TOOLTIPS_CONCEITO.totalCreditos}>
+            Total créditos
+            {totalCred > 0 && (
+              <CalcPopover breakdown={breakdownOperacoesTotais(estado, anoAtivo, 'credito')} label="Como é calculado o total de créditos" />
+            )}
+          </span>
           <span className="ft-val cred">{totalCred > 0 ? 'R$ ' + fmtBR(totalCred) : '—'}</span>
         </div>
       </div>

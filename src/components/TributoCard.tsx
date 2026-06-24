@@ -1,6 +1,7 @@
 'use client'
 
-import { OPERACOES, apurarAno, fmtBR, fmtCompacto } from '@/lib/simulador'
+import { OPERACOES, apurarAno, breakdownSaldoTributo, fmtBR, fmtCompacto } from '@/lib/simulador'
+import { CalcPopover } from './CalcPopover'
 import { NumberInputBR } from './NumberInputBR'
 import { TOOLTIPS_CONCEITO, TOOLTIPS_OPERACAO, TOOLTIPS_TRIBUTO } from '@/lib/tooltips'
 import type { Estado, DadosOperacao } from '@/types/simulador'
@@ -97,7 +98,13 @@ export function TributoCard({ estado, ano, tributo, onAliquotaChange }: TributoC
           {cfg.label}
           <span className={`tc-badge ${badgeClass}`}>{badgeLabel}</span>
         </span>
-        <span className="tc-total">{saldoStr}</span>
+        <span className="tc-total">
+          {saldoStr}
+          <CalcPopover
+            breakdown={saldo !== 0 ? breakdownSaldoTributo(estado, ano, tributo) : null}
+            label={`Como é calculado o saldo de ${cfg.label}`}
+          />
+        </span>
       </div>
 
       {/* Header colunas */}

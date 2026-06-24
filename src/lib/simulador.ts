@@ -1,4 +1,4 @@
-import type { ApuracaoAno, BucketAquisicao, DadosOperacao, Estado, Operacao } from '@/types/simulador'
+import type { ApuracaoAno, Breakdown, BucketAquisicao, DadosOperacao, Estado, Operacao } from '@/types/simulador'
 
 export const OPERACOES: Operacao[] = [
   { key: 'rec_locacao',         label: 'Rec. Locação',         tipo: 'debito',  categoria: 'padrao'    },
@@ -322,6 +322,220 @@ export function apurarAno(estado: Estado, ano: number): ApuracaoAno {
   }
 
   return result
+}
+
+// ─── Breakdowns (explicação derivada dos cálculos) ─────────────────────────────
+// Cada função abaixo NÃO recalcula nada novo: lê os mesmos valores de
+// apurarAno/calcularOp e os reorganiza num objeto Breakdown. Assim a explicação
+// exibida no popover "Como é calculado" nunca diverge do número exibido.
+
+const LABEL_TRIBUTO: Record<'pis' | 'cofins' | 'cbs' | 'ibs', string> = {
+  pis: 'PIS', cofins: 'COFINS', cbs: 'CBS', ibs: 'IBS',
+}
+
+/** Adiciona operador '+' a partir do 2º termo (o 1º fica sem operador). */
+function comOperadorSoma(termos: { label: string; valor: number }[]): Breakdown['termos'] {
+  return termos.map((t, i) => (i > 0 ? { ...t, operador: '+' as const } : t))
+}
+
+/** Saldo de um tributo: Débito − Crédito (TributoCard). */
+export function breakdownSaldoTributo(
+  estado: Estado,
+  ano: number,
+  tributo: 'pis' | 'cofins' | 'cbs' | 'ibs',
+): Breakdown {
+  const t = apurarAno(estado, ano)[tributo]
+  const nome = LABEL_TRIBUTO[tributo]
+  return {
+    titulo: `Saldo ${nome}`,
+    formula: 'Saldo = Débito − Crédito',
+    termos: [
+      { label: `Débito ${nome}`, valor: t.debito },
+      { label: `Crédito ${nome}`, valor: t.credito, operador: '−' },
+    ],
+    resultado: t.saldo,
+    nota: tributo === 'ibs'
+      ? 'IBS apurado como saldo único (Estadual + Municipal). LC 214/2025 arts. 39 e 40.'
+      : undefined,
+  }
+}
+
+/**
+ * Resultado líquido: Total créditos − Total débitos (tributos).
+ * Equivale a saldoCredor − totalAPagar exibido na ResultadoBar.
+ */
+export function breakdownResultadoLiquido(estado: Estado, ano: number): Breakdown {
+  const a = apurarAno(estado, ano)
+  const totalDebitos = a.pis.debito + a.cofins.debito + a.cbs.debito + a.ibs.debito
+  const totalCreditos = a.pis.credito + a.cofins.credito + a.cbs.credito + a.ibs.credito
+  return {
+    titulo: 'Resultado líquido',
+    formula: 'Resultado = Total créditos − Total débitos',
+    termos: [
+      { label: 'Total créditos', valor: totalCreditos },
+      { label: 'Total débitos', valor: totalDebitos, operador: '−' },
+    ],
+    resultado: totalCreditos - totalDebitos,
+    nota: 'Positivo = saldo credor a recuperar; negativo = a recolher.',
+  }
+}
+
+type TipoCarga = 'padrao' | 'consolidada' | 'sobreTotal' | 'bruta'
+
+/** Cargas tributárias: numerador ÷ denominador × 100 (ResumoTabela). */
+export function breakdownCarga(estado: Estado, ano: number, tipo: TipoCarga): Breakdown {
+  const a = apurarAno(estado, ano)
+  const totalDebito = a.pis.debito + a.cofins.debito + a.cbs.debito + a.ibs.debito
+  const cfg = {
+    padrao: {
+      titulo: 'Carga padrão (atividade-fim)',
+      numLabel: 'Total a pagar', num: a.totalAPagar,
+      denLabel: 'Receita padrão', den: a.receitaPadrao,
+      resultado: a.cargaPadrao,
+    },
+    consolidada: {
+      titulo: 'Carga efetiva (consolidada)',
+      numLabel: 'Total a pagar', num: a.totalAPagar,
+      denLabel: 'Receita tributável', den: a.receitaTributavel,
+      resultado: a.cargaConsolidada,
+    },
+    sobreTotal: {
+      titulo: 'Carga sobre receita total',
+      numLabel: 'Total a pagar', num: a.totalAPagar,
+      denLabel: 'Receita total', den: a.receitaTotal,
+      resultado: a.cargaSobreReceitaTotal,
+    },
+    bruta: {
+      titulo: 'Carga bruta',
+      numLabel: 'Total de débitos', num: totalDebito,
+      denLabel: 'Receita tributável', den: a.receitaTributavel,
+      resultado: a.cargaBruta,
+    },
+  }[tipo]
+
+  return {
+    titulo: cfg.titulo,
+    formula: `Carga = ${cfg.numLabel} ÷ ${cfg.denLabel} × 100`,
+    termos: [
+      { label: cfg.numLabel, valor: cfg.num },
+      { label: cfg.denLabel, valor: cfg.den, operador: '÷' },
+    ],
+    resultado: cfg.resultado,
+    resultadoFormato: 'percent',
+  }
+}
+
+/** Receita bruta = soma dos valores das operações de débito (ResumoTabela). */
+export function breakdownReceitaBruta(estado: Estado, ano: number): Breakdown {
+  const ea = estado[ano]
+  const termos = OPERACOES
+    .filter(o => o.tipo === 'debito')
+    .map(o => ({ label: o.label, valor: ea[o.key].valor }))
+    .filter(t => t.valor !== 0)
+  return {
+    titulo: 'Receita bruta',
+    formula: 'Receita bruta = soma das receitas (operações de débito)',
+    termos: comOperadorSoma(termos),
+    resultado: apurarAno(estado, ano).receitaTotal,
+  }
+}
+
+/** Total de tributos sobre débitos ou créditos, por tributo (ResumoTabela). */
+export function breakdownTributosTotais(
+  estado: Estado,
+  ano: number,
+  lado: 'debito' | 'credito',
+): Breakdown {
+  const a = apurarAno(estado, ano)
+  const tributos: Array<[keyof Pick<ApuracaoAno, 'pis' | 'cofins' | 'cbs' | 'ibsE' | 'ibsM'>, string]> = [
+    ['pis', 'PIS'], ['cofins', 'COFINS'], ['cbs', 'CBS'],
+    ['ibsE', 'IBS Estadual'], ['ibsM', 'IBS Municipal'],
+  ]
+  const termos = tributos
+    .map(([k, label]) => ({ label, valor: a[k][lado] }))
+    .filter(t => t.valor !== 0)
+  const total = tributos.reduce((s, [k]) => s + a[k][lado], 0)
+  return {
+    titulo: lado === 'debito' ? 'Tributos sobre débitos' : 'Créditos compensáveis',
+    formula: `Total = PIS + COFINS + CBS + IBS (Estadual + Municipal) sobre ${lado === 'debito' ? 'débitos' : 'créditos'}`,
+    termos: comOperadorSoma(termos),
+    resultado: total,
+  }
+}
+
+/** Variação ano-a-ano da carga consolidada (pp) ou do total a pagar (%). Null no 1º ano. */
+export function breakdownDelta(
+  estado: Estado,
+  ano: number,
+  metrica: 'carga' | 'tributos',
+): Breakdown | null {
+  const idx = ANOS.indexOf(ano)
+  if (idx <= 0) return null
+  const anoAnt = ANOS[idx - 1]
+  const a = apurarAno(estado, ano)
+  const ant = apurarAno(estado, anoAnt)
+
+  if (metrica === 'carga') {
+    return {
+      titulo: `Δ Carga (${anoAnt} → ${ano})`,
+      formula: 'Δ = Carga do ano − Carga do ano anterior',
+      termos: [
+        { label: `Carga ${ano}`, valor: a.cargaConsolidada, formato: 'percent' },
+        { label: `Carga ${anoAnt}`, valor: ant.cargaConsolidada, formato: 'percent', operador: '−' },
+      ],
+      resultado: a.cargaConsolidada - ant.cargaConsolidada,
+      resultadoFormato: 'pp',
+    }
+  }
+
+  const delta = ant.totalAPagar > 0 ? ((a.totalAPagar - ant.totalAPagar) / ant.totalAPagar) * 100 : 0
+  return {
+    titulo: `Δ Tributos (${anoAnt} → ${ano})`,
+    formula: 'Δ% = (Total ano − Total anterior) ÷ Total anterior × 100',
+    termos: [
+      { label: `Total a pagar ${ano}`, valor: a.totalAPagar },
+      { label: `Total a pagar ${anoAnt}`, valor: ant.totalAPagar, operador: '−' },
+    ],
+    resultado: delta,
+    resultadoFormato: 'percent',
+  }
+}
+
+/** Base efetiva de uma operação: Valor − Redução/Custo (PainelEsquerdo). */
+export function breakdownBaseEfetiva(estado: Estado, ano: number, opKey: string): Breakdown {
+  const d = estado[ano][opKey]
+  const labelReducao = opKey === 'venda_ativo' ? 'Custo de aquisição' : 'Redução de base'
+  return {
+    titulo: 'Base efetiva',
+    formula: `Base efetiva = Valor − ${labelReducao}`,
+    termos: [
+      { label: 'Valor da operação', valor: d.valor },
+      { label: labelReducao, valor: d.reducaoBase, operador: '−' },
+    ],
+    resultado: Math.max(0, d.valor - d.reducaoBase),
+    nota: opKey === 'venda_ativo'
+      ? 'Parcela protegida pelo VLA conforme ano de aquisição (art. 406 LC 214/2025).'
+      : undefined,
+  }
+}
+
+/** Total de operações de débito/crédito = soma dos valores informados (PainelEsquerdo). */
+export function breakdownOperacoesTotais(
+  estado: Estado,
+  ano: number,
+  tipo: 'debito' | 'credito',
+): Breakdown {
+  const ea = estado[ano]
+  const ops = OPERACOES.filter(o => o.tipo === tipo)
+  const termos = ops
+    .map(o => ({ label: o.label, valor: ea[o.key].valor }))
+    .filter(t => t.valor !== 0)
+  return {
+    titulo: tipo === 'debito' ? 'Total débitos' : 'Total créditos',
+    formula: `Total = soma dos valores das operações de ${tipo === 'debito' ? 'débito' : 'crédito'}`,
+    termos: comOperadorSoma(termos),
+    resultado: ops.reduce((s, o) => s + ea[o.key].valor, 0),
+  }
 }
 
 export function hasData(estado: Estado, ano: number): boolean {

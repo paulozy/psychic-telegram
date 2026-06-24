@@ -1,6 +1,7 @@
 'use client'
 
-import { ANOS, apurarAno, fmtCompacto } from '@/lib/simulador'
+import { ANOS, apurarAno, breakdownResultadoLiquido, fmtCompacto } from '@/lib/simulador'
+import { CalcPopover } from './CalcPopover'
 import type { Estado } from '@/types/simulador'
 
 /** Resultado do ano na convenção da barra: positivo = crédito a tomar, negativo = a pagar. */
@@ -38,7 +39,13 @@ export function ResultadoBar({ estado, anoAtivo, onSetAno }: ResultadoBarProps) 
             className={`res-ano-card ${ano === anoAtivo ? 'active' : ''}`}
             onClick={() => onSetAno(ano)}
           >
-            <span className="res-year">{ano}</span>
+            <span className="res-year">
+              {ano}
+              <CalcPopover
+                breakdown={res ? breakdownResultadoLiquido(estado, ano) : null}
+                label={`Como é calculado o resultado de ${ano}`}
+              />
+            </span>
             <span className="res-val">{res ? fmtCompacto(res) : '—'}</span>
             <span className={`res-pct ${pctClass}`}>{pctStr || '\u00a0'}</span>
           </div>

@@ -72,3 +72,32 @@ export interface ApuracaoAno {
   cargaSobreReceitaTotal: number
   cargaBruta: number
 }
+
+/** Formato de exibição de um termo/resultado de breakdown. */
+export type BreakdownFormato = 'moeda' | 'percent' | 'pp' | 'fator'
+
+/** Um termo (parcela) que entra numa fórmula de cálculo. */
+export interface BreakdownTermo {
+  label: string
+  valor: number
+  /** Default 'moeda'. */
+  formato?: BreakdownFormato
+  /** Operador mostrado antes do termo na lista (o 1º termo geralmente não tem). */
+  operador?: '+' | '−' | '×' | '÷'
+}
+
+/**
+ * Explicação derivada de como um número exibido foi calculado.
+ * Sempre produzida a partir do MESMO cálculo de apurarAno/calcularOp — nunca
+ * escrita à mão — para não sair de sincronia com o valor exibido.
+ */
+export interface Breakdown {
+  titulo: string
+  formula: string
+  termos: BreakdownTermo[]
+  resultado: number
+  /** Default 'moeda'. */
+  resultadoFormato?: BreakdownFormato
+  /** Referência legal ou observação curta. */
+  nota?: string
+}

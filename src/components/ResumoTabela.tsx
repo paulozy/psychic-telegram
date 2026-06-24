@@ -1,9 +1,19 @@
 'use client'
 
-import { ANOS, apurarAno, fmtBR } from '@/lib/simulador'
+import {
+  ANOS,
+  apurarAno,
+  breakdownCarga,
+  breakdownDelta,
+  breakdownReceitaBruta,
+  breakdownResultadoLiquido,
+  breakdownTributosTotais,
+  fmtBR,
+} from '@/lib/simulador'
 import { TOOLTIPS_CONCEITO, TOOLTIPS_METRICA } from '@/lib/tooltips'
 import type { Estado } from '@/types/simulador'
 import { useState } from 'react'
+import { CalcPopover } from './CalcPopover'
 
 interface ResumoTabelaProps {
   estado: Estado
@@ -105,6 +115,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               {dados.map(({ ano, receitaTotal }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                   {receitaTotal > 0 ? 'R$ ' + fmtBR(receitaTotal) : '—'}
+                  {ano === anoAtivo && receitaTotal > 0 && (
+                    <CalcPopover breakdown={breakdownReceitaBruta(estado, ano)} label={`Como é calculada a receita bruta de ${ano}`} />
+                  )}
                 </td>
               ))}
             </tr>
@@ -115,6 +128,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                     {totalDebitos > 0 ? 'R$ ' + fmtBR(totalDebitos) : '—'}
+                    {ano === anoAtivo && totalDebitos > 0 && (
+                      <CalcPopover breakdown={breakdownTributosTotais(estado, ano, 'debito')} label={`Como é calculado os tributos sobre débitos de ${ano}`} />
+                    )}
                   </td>
                 )
               })}
@@ -126,6 +142,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                     {totalCreditos > 0 ? 'R$ ' + fmtBR(totalCreditos) : '—'}
+                    {ano === anoAtivo && totalCreditos > 0 && (
+                      <CalcPopover breakdown={breakdownTributosTotais(estado, ano, 'credito')} label={`Como é calculado os créditos compensáveis de ${ano}`} />
+                    )}
                   </td>
                 )
               })}
@@ -144,6 +163,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
                     {liquido !== 0 ? fmtSigned(liquido) : '—'}
+                    {ano === anoAtivo && liquido !== 0 && (
+                      <CalcPopover breakdown={breakdownResultadoLiquido(estado, ano)} label={`Como é calculado o resultado líquido de ${ano}`} />
+                    )}
                   </td>
                 )
               })}
@@ -158,6 +180,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               {dados.map(({ ano, cargaConsolidada }) => (
                 <td key={ano} className={`rt-td rt-td-num marg ${ano === anoAtivo ? 'active' : ''}`}>
                   {cargaConsolidada > 0 ? fmtPct(cargaConsolidada) : '—'}
+                  {ano === anoAtivo && cargaConsolidada > 0 && (
+                    <CalcPopover breakdown={breakdownCarga(estado, ano, 'consolidada')} label={`Como é calculada a carga efetiva de ${ano}`} />
+                  )}
                 </td>
               ))}
             </tr>
@@ -170,6 +195,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                       {fmtDeltaCarga(deltaCarga)}
                     </span>
                   )}
+                  {ano === anoAtivo && deltaCarga !== null && (
+                    <CalcPopover breakdown={breakdownDelta(estado, ano, 'carga')} label={`Como é calculada a variação de carga em ${ano}`} />
+                  )}
                 </td>
               ))}
             </tr>
@@ -181,6 +209,9 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                     <span className={deltaTotal > 0 ? 'delta-up' : deltaTotal < 0 ? 'delta-down' : ''}>
                       {fmtDeltaPct(deltaTotal)}
                     </span>
+                  )}
+                  {ano === anoAtivo && deltaTotal !== null && (
+                    <CalcPopover breakdown={breakdownDelta(estado, ano, 'tributos')} label={`Como é calculada a variação de tributos em ${ano}`} />
                   )}
                 </td>
               ))}
@@ -272,7 +303,10 @@ function BreakdownAno({
           >
             Carga bruta
           </span>
-          <span className="rt-bd-footer-val">{a.cargaBruta.toFixed(2).replace('.', ',')}%</span>
+          <span className="rt-bd-footer-val">
+            {a.cargaBruta.toFixed(2).replace('.', ',')}%
+            <CalcPopover breakdown={breakdownCarga(estado, ano, 'bruta')} label="Como é calculada a carga bruta" />
+          </span>
         </div>
         <div className="rt-bd-footer-row">
           <span
@@ -281,7 +315,10 @@ function BreakdownAno({
           >
             Carga padrão (atividade-fim)
           </span>
-          <span className="rt-bd-footer-val">{a.cargaPadrao.toFixed(2).replace('.', ',')}%</span>
+          <span className="rt-bd-footer-val">
+            {a.cargaPadrao.toFixed(2).replace('.', ',')}%
+            <CalcPopover breakdown={breakdownCarga(estado, ano, 'padrao')} label="Como é calculada a carga padrão" />
+          </span>
         </div>
         <div className="rt-bd-footer-row">
           <span
@@ -290,7 +327,10 @@ function BreakdownAno({
           >
             Carga consolidada (tributável)
           </span>
-          <span className="rt-bd-footer-val">{a.cargaConsolidada.toFixed(2).replace('.', ',')}%</span>
+          <span className="rt-bd-footer-val">
+            {a.cargaConsolidada.toFixed(2).replace('.', ',')}%
+            <CalcPopover breakdown={breakdownCarga(estado, ano, 'consolidada')} label="Como é calculada a carga consolidada" />
+          </span>
         </div>
         <div className="rt-bd-footer-row">
           <span
@@ -299,7 +339,10 @@ function BreakdownAno({
           >
             Carga sobre receita total
           </span>
-          <span className="rt-bd-footer-val">{a.cargaSobreReceitaTotal.toFixed(2).replace('.', ',')}%</span>
+          <span className="rt-bd-footer-val">
+            {a.cargaSobreReceitaTotal.toFixed(2).replace('.', ',')}%
+            <CalcPopover breakdown={breakdownCarga(estado, ano, 'sobreTotal')} label="Como é calculada a carga sobre receita total" />
+          </span>
         </div>
       </div>
     </div>
