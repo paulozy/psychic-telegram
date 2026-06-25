@@ -55,10 +55,11 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
     return v.toFixed(2).replace('.', ',') + '%'
   }
 
-  function fmtDeltaPct(v: number) {
-    const s = v > 0 ? '+' : ''
-    return s + v.toFixed(1).replace('.', ',') + '%'
-  }
+  // Usado pela linha "Δ Tributos", desativada a pedido do cliente. Reativar junto.
+  // function fmtDeltaPct(v: number) {
+  //   const s = v > 0 ? '+' : ''
+  //   return s + v.toFixed(1).replace('.', ',') + '%'
+  // }
 
   function fmtDeltaCarga(v: number) {
     const s = v > 0 ? '+' : ''
@@ -115,7 +116,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               {dados.map(({ ano, receitaTotal }) => (
                 <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                   {receitaTotal > 0 ? 'R$ ' + fmtBR(receitaTotal) : '—'}
-                  {ano === anoAtivo && receitaTotal > 0 && (
+                  {receitaTotal > 0 && (
                     <CalcPopover breakdown={breakdownReceitaBruta(estado, ano)} label={`Como é calculada a receita bruta de ${ano}`} />
                   )}
                 </td>
@@ -128,7 +129,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                     {totalDebitos > 0 ? 'R$ ' + fmtBR(totalDebitos) : '—'}
-                    {ano === anoAtivo && totalDebitos > 0 && (
+                    {totalDebitos > 0 && (
                       <CalcPopover breakdown={breakdownTributosTotais(estado, ano, 'debito')} label={`Como é calculado os tributos sobre débitos de ${ano}`} />
                     )}
                   </td>
@@ -142,7 +143,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num ${ano === anoAtivo ? 'active' : ''}`}>
                     {totalCreditos > 0 ? 'R$ ' + fmtBR(totalCreditos) : '—'}
-                    {ano === anoAtivo && totalCreditos > 0 && (
+                    {totalCreditos > 0 && (
                       <CalcPopover breakdown={breakdownTributosTotais(estado, ano, 'credito')} label={`Como é calculado os créditos compensáveis de ${ano}`} />
                     )}
                   </td>
@@ -163,7 +164,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                 return (
                   <td key={ano} className={`rt-td rt-td-num trib ${ano === anoAtivo ? 'active' : ''}`}>
                     {liquido !== 0 ? fmtSigned(liquido) : '—'}
-                    {ano === anoAtivo && liquido !== 0 && (
+                    {liquido !== 0 && (
                       <CalcPopover breakdown={breakdownResultadoLiquido(estado, ano)} label={`Como é calculado o resultado líquido de ${ano}`} />
                     )}
                   </td>
@@ -180,7 +181,7 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
               {dados.map(({ ano, cargaConsolidada }) => (
                 <td key={ano} className={`rt-td rt-td-num marg ${ano === anoAtivo ? 'active' : ''}`}>
                   {cargaConsolidada > 0 ? fmtPct(cargaConsolidada) : '—'}
-                  {ano === anoAtivo && cargaConsolidada > 0 && (
+                  {cargaConsolidada > 0 && (
                     <CalcPopover breakdown={breakdownCarga(estado, ano, 'consolidada')} label={`Como é calculada a carga efetiva de ${ano}`} />
                   )}
                 </td>
@@ -195,12 +196,14 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                       {fmtDeltaCarga(deltaCarga)}
                     </span>
                   )}
-                  {ano === anoAtivo && deltaCarga !== null && (
+                  {deltaCarga !== null && (
                     <CalcPopover breakdown={breakdownDelta(estado, ano, 'carga')} label={`Como é calculada a variação de carga em ${ano}`} />
                   )}
                 </td>
               ))}
             </tr>
+            {/* Linha "Δ Tributos" desativada a pedido do cliente (pode voltar no futuro).
+                Reativar este <tr> e o helper fmtDeltaPct abaixo para restaurar.
             <tr className="rt-row rt-row-delta">
               <td className="rt-td rt-td-label" title={TOOLTIPS_METRICA.deltaTributos}>Δ Tributos</td>
               {dados.map(({ ano, deltaTotal }) => (
@@ -210,12 +213,13 @@ export function ResumoTabela({ estado, anoAtivo, onSetAno }: ResumoTabelaProps) 
                       {fmtDeltaPct(deltaTotal)}
                     </span>
                   )}
-                  {ano === anoAtivo && deltaTotal !== null && (
+                  {deltaTotal !== null && (
                     <CalcPopover breakdown={breakdownDelta(estado, ano, 'tributos')} label={`Como é calculada a variação de tributos em ${ano}`} />
                   )}
                 </td>
               ))}
             </tr>
+            */}
           </tbody>
         </table>
       </div>
