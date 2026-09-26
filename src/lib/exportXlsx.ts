@@ -365,7 +365,7 @@ function addApuracaoGeral(wb: ExcelJS.Workbook, estado: Estado) {
   ws.getRow(1).height = 26
   ws.mergeCells(1, 1, 1, maxCols)
   const titleCell = ws.getCell(1, 1)
-  titleCell.value = 'CALCULADORA REFORMA TRIBUTÁRIA — ARVAL BRASIL'
+  titleCell.value = 'CALCULADORA REFORMA TRIBUTÁRIA — CONTRIBUT CONTABILIDADE'
   applyTitleStyle(titleCell)
 
   // Row 2 — empty spacer
@@ -390,7 +390,7 @@ function addLeiaMe(wb: ExcelJS.Workbook) {
 
   ws.mergeCells('A1:B1')
   const titleCell = ws.getCell('A1')
-  titleCell.value = 'Exportação — Simulador Arval'
+  titleCell.value = 'Exportação — Simulador Contribut'
   titleCell.font = { bold: true, size: 14, color: CLR_WHITE }
   titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: CLR_TITLE }
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -407,7 +407,7 @@ function addLeiaMe(wb: ExcelJS.Workbook) {
 
 export function buildWorkbook(estado: Estado): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'Simulador Arval'
+  wb.creator = 'Simulador Contribut'
   wb.created = new Date()
 
   addLeiaMe(wb)
@@ -454,7 +454,7 @@ export async function exportarXlsx(estado: Estado): Promise<void> {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'Simulador_Arval_Reforma_Tributaria.xlsx'
+  a.download = 'Simulador_Contribut_Reforma_Tributaria.xlsx'
   a.click()
   URL.revokeObjectURL(url)
 }

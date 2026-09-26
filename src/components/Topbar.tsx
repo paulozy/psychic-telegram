@@ -12,10 +12,10 @@ export function Topbar({ onLimpar, onExportar, onBaixarTemplate, onImportar, onA
   return (
     <header className="topbar">
       <div className="logo">
-        <div className="logo-mark">AR</div>
+        <div className="logo-mark">CC</div>
         <span className="logo-name">Simulador Tributário</span>
         <div className="logo-sep" />
-        <span className="logo-sub">LC 214/2025 · Arval Brasil</span>
+        <span className="logo-sub">LC 214/2025 · Contribut Contabilidade</span>
       </div>
       <div className="topbar-right" data-tour="topbar-acoes">
         <button className="btn btn-ghost btn-tutorial" onClick={onAbrirTutorial} aria-label="Abrir tutorial">Tutorial</button>

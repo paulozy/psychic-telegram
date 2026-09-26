@@ -16,7 +16,7 @@ import { estadoInicial } from '../src/lib/simulador.ts'
 export const test = base.extend({
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
-      window.localStorage.setItem('arval-simulador-tour-v1', JSON.stringify({ completed: true }))
+      window.localStorage.setItem('contribut-simulador-tour-v1', JSON.stringify({ completed: true }))
     })
     await use(page)
   },
@@ -32,7 +32,7 @@ export async function seedScenario(page: Page, cenario: Cenario) {
   const json = JSON.stringify(estado)
 
   await page.addInitScript(payload => {
-    window.localStorage.setItem('arval-simulador-v7', payload)
+    window.localStorage.setItem('contribut-simulador-v1', payload)
   }, json)
 
   await page.goto('/')

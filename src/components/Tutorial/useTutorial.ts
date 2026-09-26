@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { STEPS } from './steps'
 
-const STORAGE_KEY = 'arval-simulador-tour-v1'
+const STORAGE_KEY = 'contribut-simulador-tour-v1'
 const MIN_WIDTH = 768
 
 export interface TutorialState {

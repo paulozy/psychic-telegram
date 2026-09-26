@@ -1,6 +1,6 @@
-# Simulador Tributário — Arval Brasil
+# Simulador Tributário — Contribut Contabilidade
 
-Ferramenta web para simulação do impacto da **Reforma Tributária (LC 214/2025)** nas operações da Arval Brasil, cobrindo a transição do regime PIS/COFINS para o novo regime CBS/IBS ao longo de 2026–2033.
+Ferramenta web para simulação do impacto da **Reforma Tributária (LC 214/2025)** nas operações da empresa, cobrindo a transição do regime PIS/COFINS para o novo regime CBS/IBS ao longo de 2026–2033.
 
 ## Funcionalidades
 

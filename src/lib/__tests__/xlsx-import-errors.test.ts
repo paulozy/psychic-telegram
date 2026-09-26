@@ -60,7 +60,7 @@ describe('XLSX import — cenários de erro', () => {
   test('versão desconhecida no Leia-me: rejeita import', async () => {
     const wb = await buildBaseWorkbook()
     const leiaMe = wb.getWorksheet('Leia-me')!
-    leiaMe.getCell('B2').value = 'arval-template-v99'
+    leiaMe.getCell('B2').value = 'contribut-template-v99'
 
     const buf = await wb.xlsx.writeBuffer()
     const result = await importBuffer(buf)

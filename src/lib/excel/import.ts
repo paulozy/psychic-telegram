@@ -244,7 +244,7 @@ function parseDetalheSheet(
   return rows
 }
 
-function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v6' | 'invalido' {
+function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'valido' | 'invalido' {
   const leiaMe = wb.getWorksheet(SHEET_LEIAME)
   if (!leiaMe) {
     errors.push({
@@ -254,7 +254,7 @@ function checkVersao(wb: ExcelJS.Workbook, errors: ImportError[]): 'template-v6'
     return 'invalido'
   }
   const versao = readString(leiaMe.getCell('B2').value)
-  if (versao === TEMPLATE_VERSION) return 'template-v6'
+  if (versao === TEMPLATE_VERSION) return 'valido'
   errors.push({
     sheet: SHEET_LEIAME,
     cell: 'B2',

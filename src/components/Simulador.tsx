@@ -26,10 +26,10 @@ import type { BucketAquisicao, Estado, DadosOperacao } from '@/types/simulador'
 
 export function Simulador() {
   const estadoBase = useMemo(() => estadoInicial(), [])
-  // v7: adiciona operação "outras_receitas" a OPERACOES. Bump descarta estados v6
-  // antigos que não têm a chave (evita crash em apurarAno). Sem backward-compat:
-  // qualquer mudança em OPERACOES/schema do estado DEVE bumpar esta versão.
-  const [estado, setEstado] = useLocalStorage<Estado>('arval-simulador-v7', estadoBase)
+  // Sem backward-compat: qualquer mudança em OPERACOES/schema do estado DEVE
+  // bumpar esta versão. O bump descarta estados antigos incompatíveis, que
+  // causariam crash em apurarAno por falta de chaves.
+  const [estado, setEstado] = useLocalStorage<Estado>('contribut-simulador-v1', estadoBase)
   const [anoAtivo, setAnoAtivo] = useState(2026)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
@@ -78,7 +78,7 @@ export function Simulador() {
 
   const handleLimpar = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v7')
+      localStorage.removeItem('contribut-simulador-v1')
     }
     setEstado(estadoInicial())
     showToast('Dados limpos')
@@ -136,7 +136,7 @@ export function Simulador() {
 
   const handleLimparExemplo = useCallback(() => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('arval-simulador-v7')
+      localStorage.removeItem('contribut-simulador-v1')
     }
     setEstado(estadoInicial())
   }, [setEstado])

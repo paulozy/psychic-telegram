@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Simulador Tributário — Arval Brasil',
+  title: 'Simulador Tributário — Contribut Contabilidade',
   description: 'Simulação de impacto tributário LC 214/2025',
 }
 

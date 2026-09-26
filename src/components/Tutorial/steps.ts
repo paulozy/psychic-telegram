@@ -15,7 +15,7 @@ export const STEPS: TutorialStep[] = [
   {
     target: null,
     titulo: 'Bem-vindo ao Simulador Tributário',
-    descricao: 'Esta ferramenta projeta o impacto da Reforma Tributária (LC 214/2025) nas operações da Arval entre 2026 e 2033. Vou mostrar como usar em ~1 minuto.',
+    descricao: 'Esta ferramenta projeta o impacto da Reforma Tributária (LC 214/2025) nas operações da empresa entre 2026 e 2033. Vou mostrar como usar em ~1 minuto.',
   },
   {
     target: 'ano-tabs',

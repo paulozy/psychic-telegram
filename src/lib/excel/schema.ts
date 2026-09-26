@@ -1,6 +1,6 @@
 import type { DadosOperacao } from '@/types/simulador'
 
-export const TEMPLATE_VERSION = 'arval-template-v6'
+export const TEMPLATE_VERSION = 'contribut-template-v1'
 
 export const SHEET_LEIAME = 'Leia-me'
 

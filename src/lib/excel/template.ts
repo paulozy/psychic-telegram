@@ -61,7 +61,7 @@ function addLeiaMe(wb: ExcelJS.Workbook) {
 
   ws.mergeCells('A1:B1')
   const titleCell = ws.getCell('A1')
-  titleCell.value = 'Template de importação — Simulador Arval'
+  titleCell.value = 'Template de importação — Simulador Contribut'
   applyTitle(titleCell)
   ws.getRow(1).height = 26
 
@@ -256,7 +256,7 @@ function addSheetDetalhe(wb: ExcelJS.Workbook, sheetNome: string, ops: string[])
 
 export async function gerarTemplate(): Promise<void> {
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'Simulador Arval'
+  wb.creator = 'Simulador Contribut'
   wb.created = new Date()
 
   addLeiaMe(wb)
@@ -271,7 +271,7 @@ export async function gerarTemplate(): Promise<void> {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'Simulador_Arval_Template.xlsx'
+  a.download = 'Simulador_Contribut_Template.xlsx'
   a.click()
   URL.revokeObjectURL(url)
 }
